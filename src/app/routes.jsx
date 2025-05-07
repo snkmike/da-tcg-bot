@@ -1,4 +1,3 @@
-// src/app/routes.js
 import React from 'react';
 import SearchTab from '../components/search/SearchTab';
 import PriceTab from '../components/price/PriceTab';
@@ -22,8 +21,16 @@ export function renderContent(activeTab, state) {
     selectedRarities, setSelectedRarities,
     mockCards,
     userPortfolio,
-    user
+    user,
+    filterKey
   } = state;
+
+  const LorcanaComponentWrapper = (props) => (
+    <LorcanaResults
+      {...props}
+      handleAddCardsToPortfolio={handleAddCardsToPortfolio}
+    />
+  );
 
   switch (activeTab) {
     case 'search':
@@ -41,16 +48,14 @@ export function renderContent(activeTab, state) {
           showSetResults={showSetResults}
           setShowSetResults={setShowSetResults}
           mockSets={[]}
-          minPrice={state.minPrice}
           setMinPrice={setMinPrice}
-          maxPrice={state.maxPrice}
           setMaxPrice={setMaxPrice}
-          LorcanaComponent={filterGame === 'Lorcana' ? LorcanaResults : null}
-
+          LorcanaComponent={filterGame === 'Lorcana' ? LorcanaComponentWrapper : null}
           availableSets={availableSets}
           handleAddCardsToPortfolio={handleAddCardsToPortfolio}
           selectedRarities={selectedRarities}
           setSelectedRarities={setSelectedRarities}
+          filterKey={filterKey}
         />
       );
     case 'price':

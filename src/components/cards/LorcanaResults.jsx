@@ -3,7 +3,10 @@ import { supabase } from '../../supabaseClient';
 import { Sparkles } from 'lucide-react';
 import Select from 'react-select';
 
-export default function LorcanaResults({ results = [], setSelectedCard, handleAddCardsToPortfolio, groupBySet = false }) {
+export default function LorcanaResults({ results, setSelectedCard, groupBySet, handleAddCardsToPortfolio }) {
+  //console.log("🧪 Type de handleAddCardsToPortfolio:", typeof handleAddCardsToPortfolio);
+  //console.log("✅ LorcanaResults props:", typeof handleAddCardsToPortfolio);
+
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
   const [userId, setUserId] = useState('');
@@ -25,7 +28,7 @@ export default function LorcanaResults({ results = [], setSelectedCard, handleAd
   }, []);
 
   const collectionOptions = collections.map(name => ({ value: name, label: name }));
-  console.log('🎴 Résultats reçus dans LorcanaResults :', results);
+  //console.log('🎴 Résultats reçus dans LorcanaResults :', results);
 
   const customStyles = {
     control: (base, state) => ({

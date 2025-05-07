@@ -22,6 +22,29 @@ export default function App() {
   const [filterGame, setFilterGame] = useState('all');
   const [availableSets, setAvailableSets] = useState([]);
 
+  const handleAddCardsToPortfolio = async (cards, collectionName) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+  
+    if (!userId || !collectionName || !cards || cards.length === 0) return;
+  
+    const enrichedCards = cards.map(card => {
+      const { id, ...rest } = card;
+      return {
+        ...rest,
+        user_id: userId,
+        collection: collectionName,
+      };
+    });
+  
+    const { error } = await supabase.from('cards').insert(enrichedCards);
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+    } else {
+      //console.log(`✅ Ajouté à la collection '${collectionName}':`, enrichedCards);
+    }
+  };
+
   useEffect(() => {
     if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') return;
     const doSearch = async () => {
@@ -40,7 +63,7 @@ export default function App() {
         const json = await res.json();
         const uniqueSets = [...new Set(json.results.map(set => set.name).filter(Boolean))].sort();
         setAvailableSets(uniqueSets);
-        console.log('📦 Sets chargés (preload):', uniqueSets);
+        //console.log('📦 Sets chargés (preload):', uniqueSets);
       } catch (err) {
         console.error('Erreur chargement sets Lorcana:', err);
         setAvailableSets([]);
@@ -101,7 +124,8 @@ export default function App() {
           setFilterGame,
           searchResults,
           availableSets,
-          filterKey: filterGame
+          filterKey: filterGame,
+          handleAddCardsToPortfolio
         })}
       </main>
     </div>
