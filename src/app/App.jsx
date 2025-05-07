@@ -1,15 +1,58 @@
-// src/app/App.jsx
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useAppState } from './useAppState';
 import { renderContent } from './routes';
 import Auth from '../components/auth/Auth';
 import TabButton from '../components/ui/TabButton';
 import { Search, Bell, Tag, PieChart, Library } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { fetchLorcanaData } from '../utils/api/fetchLorcanaData';
 
 export default function App() {
   const state = useAppState();
   const { user, setUser, activeTab, setActiveTab } = state;
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSet, setFilterSet] = useState('all');
+  const [minPrice, setMinPrice] = useState(null);
+  const [maxPrice, setMaxPrice] = useState(null);
+  const [selectedRarities, setSelectedRarities] = useState([]);
+  const [showSetResults, setShowSetResults] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [filterGame, setFilterGame] = useState('all');
+  const [availableSets, setAvailableSets] = useState([]);
+
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') return;
+    const doSearch = async () => {
+      const results = await fetchLorcanaData(
+        searchQuery, filterSet, minPrice, maxPrice, selectedRarities, showSetResults
+      );
+      setSearchResults(results);
+    };
+    doSearch();
+  }, [searchQuery, filterSet, minPrice, maxPrice, selectedRarities, showSetResults, filterGame]);
+
+  useEffect(() => {
+    const preloadLorcanaSets = async () => {
+      try {
+        const res = await fetch('https://api.lorcast.com/v0/sets');
+        const json = await res.json();
+        const uniqueSets = [...new Set(json.results.map(set => set.name).filter(Boolean))].sort();
+        setAvailableSets(uniqueSets);
+        console.log('📦 Sets chargés (preload):', uniqueSets);
+      } catch (err) {
+        console.error('Erreur chargement sets Lorcana:', err);
+        setAvailableSets([]);
+      }
+    };
+
+    if (filterGame === 'Lorcana') {
+      preloadLorcanaSets();
+    } else {
+      setAvailableSets([]);
+    }
+  }, [filterGame]);
 
   if (!user) return <Auth setUser={setUser} />;
 
@@ -40,7 +83,26 @@ export default function App() {
       </nav>
 
       <main className="flex-1 p-4 overflow-y-auto">
-        {renderContent(activeTab, state)}
+        {renderContent(activeTab, {
+          ...state,
+          searchQuery,
+          setSearchQuery,
+          filterSet,
+          setFilterSet,
+          minPrice,
+          setMinPrice,
+          maxPrice,
+          setMaxPrice,
+          selectedRarities,
+          setSelectedRarities,
+          showSetResults,
+          setShowSetResults,
+          filterGame,
+          setFilterGame,
+          searchResults,
+          availableSets,
+          filterKey: filterGame
+        })}
       </main>
     </div>
   );

@@ -25,7 +25,6 @@ export default function LorcanaResults({ results = [], setSelectedCard, handleAd
   }, []);
 
   const collectionOptions = collections.map(name => ({ value: name, label: name }));
-  console.log('🎴 Résultats reçus dans LorcanaResults :', results);
 
   const customStyles = {
     control: (base, state) => ({

@@ -1,17 +1,14 @@
-
 import SearchBox from './SearchBox';
 import SearchFilters from './SearchFilters';
 import CardResult from '../cards/CardResult';
 import SetResult from '../cards/SetResult';
 
-import { useState, useEffect } from 'react';
-import { fetchLorcanaData } from '../../utils/api/fetchLorcanaData';
+import { useState } from 'react';
 
 export default function SearchTab({
   searchQuery,
   setSearchQuery,
   searchResults,
-  setSearchResults,
   filterGame,
   setFilterGame,
   filterSet,
@@ -25,43 +22,24 @@ export default function SearchTab({
   LorcanaComponent,
   availableSets = [],
   selectedRarities,
-  setSelectedRarities,
-  filterKey
+  setSelectedRarities
 }) {
+  const [localQuery, setLocalQuery] = useState(searchQuery);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = (query) => {
-    if (query.length < 3) return;
     setIsLoading(true);
     setSearchQuery(query);
-    setTimeout(() => setIsLoading(false), 500);
+    setTimeout(() => setIsLoading(false), 500); // Simule une requête async
   };
-
-  useEffect(() => {
-    if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') return;
-
-    const doSearch = async () => {
-      const results = await fetchLorcanaData(
-        searchQuery,
-        filterSet,
-        null,
-        null,
-        selectedRarities,
-        showSetResults
-      );
-      setSearchResults(results);
-    };
-
-    doSearch();
-  }, [searchQuery, filterSet, selectedRarities, showSetResults, filterGame]);
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Recherche de carte</h2>
 
       <SearchBox
-        localQuery={searchQuery}
-        setLocalQuery={setSearchQuery}
+        localQuery={localQuery}
+        setLocalQuery={setLocalQuery}
         filterGame={filterGame}
         setFilterGame={setFilterGame}
         onSearch={handleSearch}
@@ -69,6 +47,8 @@ export default function SearchTab({
       />
 
       <SearchFilters
+        filterGame={filterGame}
+        setFilterGame={setFilterGame}
         filterSet={filterSet}
         setFilterSet={setFilterSet}
         setMinPrice={setMinPrice}
@@ -78,23 +58,20 @@ export default function SearchTab({
         availableSets={availableSets}
         selectedRarities={selectedRarities}
         setSelectedRarities={setSelectedRarities}
-        filterKey={filterKey}
       />
 
       <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
-        {LorcanaComponent ? (
-          <LorcanaComponent
-            results={searchResults}
-            setSelectedCard={setSelectedCard}
-            groupBySet={showSetResults}
-          />
-        ) : (
-          <CardResult
-            searchResults={searchResults}
-            setSelectedCard={setSelectedCard}
-            groupBySet={showSetResults}
-          />
-        )}
+      {LorcanaComponent ? (
+      <LorcanaComponent
+      results={searchResults}
+      setSelectedCard={setSelectedCard}
+      groupBySet={showSetResults}
+      />
+    
+      ) : (
+      <CardResult searchResults={searchResults} setSelectedCard={setSelectedCard} />
+      )}
+
       </div>
     </div>
   );

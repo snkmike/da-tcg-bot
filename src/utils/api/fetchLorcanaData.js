@@ -1,26 +1,11 @@
-// src/utils/api/fetchLorcanaData.js
 
 export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, selectedRarities, showSetResults) {
   try {
     const nameEncoded = encodeURIComponent(query || 'Elsa');
+    const response = await fetch(`https://api.lorcast.com/v0/cards/search?q=${nameEncoded}`);
+    const json = await response.json();
 
-    const [resBase, resEnchanted, resPromo] = await Promise.all([
-      fetch(`http://localhost:8020/lorcast/cards?q=${nameEncoded}`),
-      fetch(`http://localhost:8020/lorcast/cards?q=${nameEncoded}+rarity:enchanted`),
-      fetch(`http://localhost:8020/lorcast/cards?q=${nameEncoded}+rarity:promo`)
-    ]);
-
-    const baseData = await resBase.json();
-    const enchantedData = await resEnchanted.json();
-    const promoData = await resPromo.json();
-
-    const allResults = [
-      ...baseData.results, 
-      ...enchantedData.results,
-      ...promoData.results
-    ];
-
-    const formatted = allResults.map(card => ({
+    const formatted = (json.results || []).map(card => ({
       id: card.id,
       name: card.name,
       set_name: card.set?.name || 'Set inconnu',

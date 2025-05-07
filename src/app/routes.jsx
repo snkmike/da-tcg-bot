@@ -32,6 +32,7 @@ export function renderContent(activeTab, state) {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           searchResults={searchResults}
+          setSearchResults={setSearchResults}
           filterGame={filterGame}
           setFilterGame={setFilterGame}
           filterSet={filterSet}
@@ -40,11 +41,12 @@ export function renderContent(activeTab, state) {
           showSetResults={showSetResults}
           setShowSetResults={setShowSetResults}
           mockSets={[]}
+          minPrice={state.minPrice}
           setMinPrice={setMinPrice}
+          maxPrice={state.maxPrice}
           setMaxPrice={setMaxPrice}
-          LorcanaComponent={filterGame === 'Lorcana' ? (props) => (
-            <LorcanaResults {...props} handleAddCardsToPortfolio={handleAddCardsToPortfolio} />
-          ) : null}
+          LorcanaComponent={filterGame === 'Lorcana' ? LorcanaResults : null}
+
           availableSets={availableSets}
           handleAddCardsToPortfolio={handleAddCardsToPortfolio}
           selectedRarities={selectedRarities}

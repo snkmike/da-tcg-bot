@@ -1,5 +1,4 @@
-
-import React, { useMemo } from 'react';
+import React from 'react';
 import Select from 'react-select';
 
 export default function SearchFilters({
@@ -12,13 +11,12 @@ export default function SearchFilters({
   availableSets = [],
   selectedRarities,
   setSelectedRarities,
-  filterKey
 }) {
-  const setOptions = useMemo(() => {
-    return [{ value: 'all', label: 'Toutes les extensions' }, ...availableSets.map(set => ({ value: set, label: set }))];
-  }, [availableSets]);
+  const setOptions = [{ value: 'all', label: 'Toutes les extensions' }, ...availableSets.map(set => ({ value: set, label: set }))];
 
-  const allRarities = ['Common', 'Uncommon', 'Rare', 'Super_rare', 'Legendary', 'Enchanted', 'Promo'];
+  const allRarities = [
+    'Common', 'Uncommon', 'Rare', 'Super_rare', 'Legendary', 'Enchanted', 'Promo'
+  ];
 
   const toggleRarity = (rarity) => {
     const r = rarity.toLowerCase();
@@ -35,10 +33,16 @@ export default function SearchFilters({
       borderRadius: '0.5rem',
       borderColor: state.isFocused ? '#6366f1' : '#d1d5db',
       boxShadow: state.isFocused ? '0 0 0 1px #6366f1' : 'none',
-      '&:hover': { borderColor: '#6366f1' },
+      '&:hover': {
+        borderColor: '#6366f1',
+      },
       padding: '2px 4px',
     }),
-    menu: base => ({ ...base, borderRadius: '0.5rem', zIndex: 10 }),
+    menu: base => ({
+      ...base,
+      borderRadius: '0.5rem',
+      zIndex: 10,
+    }),
     option: (base, { isFocused, isSelected }) => ({
       ...base,
       backgroundColor: isSelected ? '#6366f1' : isFocused ? '#e0e7ff' : 'white',
@@ -52,10 +56,10 @@ export default function SearchFilters({
       <h3 className="text-lg font-semibold mb-4">Filtres complémentaires</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* Extension */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Extension</label>
           <Select
-            key={filterKey}
             options={setOptions}
             value={setOptions.find(opt => opt.value === filterSet)}
             onChange={(option) => setFilterSet(option.value)}
@@ -63,6 +67,7 @@ export default function SearchFilters({
           />
         </div>
 
+        {/* Prix minimum */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Prix minimum</label>
           <input
@@ -73,6 +78,7 @@ export default function SearchFilters({
           />
         </div>
 
+        {/* Prix maximum */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Prix maximum</label>
           <input
@@ -84,6 +90,7 @@ export default function SearchFilters({
         </div>
       </div>
 
+      {/* Group by extension */}
       <div className="flex items-center space-x-2 mb-4">
         <input
           type="checkbox"
@@ -94,6 +101,7 @@ export default function SearchFilters({
         <span className="text-sm text-gray-700">Afficher les résultats groupés par extension</span>
       </div>
 
+      {/* Filtre par rareté */}
       <div>
         <h4 className="text-sm font-medium mb-2">Filtrer par rareté</h4>
         <div className="flex flex-wrap gap-3">
