@@ -15,7 +15,7 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
     const promoData = await resPromo.json();
 
     const allResults = [
-      ...baseData.results,
+      ...baseData.results, 
       ...enchantedData.results,
       ...promoData.results
     ];
