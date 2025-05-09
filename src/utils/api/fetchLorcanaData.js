@@ -1,4 +1,3 @@
-
 //src/utils/api/fetchLorcanaData.js
 // This function fetches data from the Lorcana API based on the provided query and filters.
 // It handles errors and formats the data for easier use in the application.
@@ -53,25 +52,79 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
   }
 }
 
-export async function fetchCardByNumber(setId, number) {
+export async function fetchCardByNumber(setId, numbers) {
   try {
-    const url = `https://api.lorcast.com/v0/cards/${setId}/${number}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Carte introuvable");
-    const card = await response.json();
-    return [{
-      id: card.id,
-      name: card.name,
-      set_name: card.set?.name || 'Set inconnu',
-      rarity: card.rarity,
-      image: card.image_uris?.digital?.normal || '',
-      price: card.prices?.usd || null,
-      foil_price: card.prices?.usd_foil || null,
-      collector_number: card.collector_number,
-    }];
+    // Si un seul numéro est passé en string, on le convertit en tableau
+    const numberArray = typeof numbers === 'string' ? [numbers] : numbers;
+
+    // Analyser les doublons
+    const duplicates = numberArray.reduce((acc, num) => {
+      const trimmed = num.trim();
+      acc[trimmed] = (acc[trimmed] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Garder un tableau des numéros uniques
+    const uniqueNumbers = [...new Set(numberArray.map(n => n.trim()))];
+
+    // Créer un objet pour stocker les informations sur les doublons
+    const duplicateInfo = Object.entries(duplicates)
+      .filter(([_, count]) => count > 1)
+      .reduce((acc, [num, count]) => {
+        acc[num] = count;
+        return acc;
+      }, {});
+
+    // Créer un tableau de promesses pour les requêtes en parallèle
+    const promises = uniqueNumbers.map(async (number) => {
+      const url = `https://api.lorcast.com/v0/cards/${setId}/${number}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`❌ Carte ${setId}/${number} introuvable`);
+        return null;
+      }
+      const card = await response.json();
+      return {
+        id: card.id,
+        name: card.name,
+        set_name: card.set?.name || 'Set inconnu',
+        rarity: card.rarity,
+        image: card.image_uris?.digital?.normal || '',
+        price: card.prices?.usd || null,
+        foil_price: card.prices?.usd_foil || null,
+        collector_number: card.collector_number,
+      };
+    });
+
+    // Exécuter toutes les requêtes en parallèle et filtrer les résultats null
+    const results = await Promise.all(promises);
+    const filteredResults = results.filter(card => card !== null);
+
+    // Retourner les résultats avec les informations sur les doublons
+    return {
+      cards: filteredResults,
+      duplicates: duplicateInfo
+    };
   } catch (err) {
     console.error('❌ Erreur fetch par numéro :', err);
-    return [];
+    return {
+      cards: [],
+      duplicates: {}
+    };
   }
 }
 
+export async function fetchLorcanaSets() {
+  try {
+    const response = await fetch('https://api.lorcast.com/v0/sets');
+    const json = await response.json();
+    return json.results.map(set => ({
+      id: set.code,
+      name: set.name,
+      icon: set.icon_uri || null
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (err) {
+    console.error('❌ Erreur fetch sets Lorcana:', err);
+    return [];
+  }
+}

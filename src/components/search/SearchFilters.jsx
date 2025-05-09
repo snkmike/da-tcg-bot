@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import Select from 'react-select';
 
@@ -12,7 +11,8 @@ export default function SearchFilters({
   availableSets = [],
   selectedRarities,
   setSelectedRarities,
-  filterKey
+  filterKey,
+  isDisabled
 }) {
   const setOptions = useMemo(() => {
     return [{ value: 'all', label: 'Toutes les extensions' }, ...availableSets.map(set => ({ value: set, label: set }))];
@@ -37,6 +37,8 @@ export default function SearchFilters({
       boxShadow: state.isFocused ? '0 0 0 1px #6366f1' : 'none',
       '&:hover': { borderColor: '#6366f1' },
       padding: '2px 4px',
+      opacity: isDisabled ? 0.5 : 1,
+      pointerEvents: isDisabled ? 'none' : 'auto',
     }),
     menu: base => ({ ...base, borderRadius: '0.5rem', zIndex: 10 }),
     option: (base, { isFocused, isSelected }) => ({
@@ -47,8 +49,10 @@ export default function SearchFilters({
     }),
   };
 
+  const disabledInputClass = isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : '';
+
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+    <div className={`bg-white p-4 rounded-lg shadow-sm mb-4 ${isDisabled ? 'opacity-75' : ''}`}>
       <h3 className="text-lg font-semibold mb-4">Filtres complémentaires</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -60,6 +64,7 @@ export default function SearchFilters({
             value={setOptions.find(opt => opt.value === filterSet)}
             onChange={(option) => setFilterSet(option.value)}
             styles={customStyles}
+            isDisabled={isDisabled}
           />
         </div>
 
@@ -69,7 +74,8 @@ export default function SearchFilters({
             type="number"
             placeholder="€"
             onChange={e => setMinPrice(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className={`w-full p-2 border border-gray-300 rounded-md ${disabledInputClass}`}
+            disabled={isDisabled}
           />
         </div>
 
@@ -79,7 +85,8 @@ export default function SearchFilters({
             type="number"
             placeholder="€"
             onChange={e => setMaxPrice(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className={`w-full p-2 border border-gray-300 rounded-md ${disabledInputClass}`}
+            disabled={isDisabled}
           />
         </div>
       </div>
@@ -90,22 +97,26 @@ export default function SearchFilters({
           checked={showSetResults}
           onChange={(e) => setShowSetResults(e.target.checked)}
           className="form-checkbox h-4 w-4 text-indigo-600"
+          disabled={isDisabled}
         />
-        <span className="text-sm text-gray-700">Afficher les résultats groupés par extension</span>
+        <span className={`text-sm text-gray-700 ${isDisabled ? 'opacity-50' : ''}`}>
+          Afficher les résultats groupés par extension
+        </span>
       </div>
 
       <div>
         <h4 className="text-sm font-medium mb-2">Filtrer par rareté</h4>
         <div className="flex flex-wrap gap-3">
           {allRarities.map(rarity => (
-            <label key={rarity} className="flex items-center space-x-2 text-sm">
+            <label key={rarity} className={`flex items-center space-x-2 text-sm ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
               <input
                 type="checkbox"
                 checked={selectedRarities.includes(rarity.toLowerCase())}
                 onChange={() => toggleRarity(rarity)}
-                className="form-checkbox text-indigo-600"
+                className="form-checkbox h-4 w-4 text-indigo-600"
+                disabled={isDisabled}
               />
-              <span>{rarity}</span>
+              <span>{rarity.replace('_', ' ')}</span>
             </label>
           ))}
         </div>
