@@ -1,70 +1,156 @@
-# Getting Started with Create React App
+# 🃏 da-tcg-bot
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Une application pour optimiser votre gestion de cartes à collectionner (TCG) : Magic, Pokémon, Yu-Gi-Oh!, etc.
+Suivi de prix, alertes personnalisées, dashboard, call/hold, etc.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Fonctionnalités principales
 
-### `npm start`
+* 🔍 Recherche avancée :
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+  * Par nom, extension ou jeu
+  * Détails individuels + rapport global sur une extension
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+* 📈 Suivi des prix :
 
-### `npm test`
+  * Historique avec graphes (jour/semaine/mois/année)
+  * Évolution temps réel
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+* 🚨 Alertes personnalisées :
 
-### `npm run build`
+  * Définir un prix d’achat ou vente
+  * Notifications (email/app/Discord)
+  * Monitoring en direct sur Cardmarket, Amazon, Cdiscount, etc.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* 🏷️ Étiquetage :
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+  * Manuel ou IA (Call to Go, Bad Call, Hold, etc.)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+* 📊 Dashboard :
 
-### `npm run eject`
+  * Vue d'ensemble du portfolio
+  * Performance, recommandations d'achat/vente
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+* 📦 Gestion de collection :
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+  * Import/Export, tri, filtres
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 🛠️ Technologies utilisées
 
-## Learn More
+* **Frontend** : React + Vite + Tailwind CSS
+* **Backend** : (en développement ou prévu) Node.js / Express
+* **Base de données** : (à définir : MongoDB / PostgreSQL ?)
+* **APIs externes** : Cardmarket, Amazon, Cdiscount, autres
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📦 Installation locale
 
-### Code Splitting
+### 1. Cloner le dépôt
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+git clone https://github.com/snkmike/da-tcg-bot.git
+cd da-tcg-bot
+```
 
-### Analyzing the Bundle Size
+### 2. Installer les dépendances
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+npm install
+```
 
-### Making a Progressive Web App
+### 3. Lancer l’application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+npm run dev
+```
 
-### Advanced Configuration
+Accéder ensuite à [http://localhost:5173](http://localhost:5173)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## 🔧 Configuration environnement
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Créer un fichier `.env` à la racine, exemple :
 
-### `npm run build` fails to minify
+```env
+VITE_API_URL=http://localhost:3000
+CARDMARKET_API_KEY=...
+AMAZON_API_KEY=...
+DISCORD_WEBHOOK_URL=...
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## 🧰 Tests
+
+> (A à implémenter)
+
+Prévu : tests unitaires avec Jest + tests d’intégration + e2e (Cypress)
+
+---
+
+## 🚀 Déploiement
+
+### En local avec Docker (prochainement)
+
+```bash
+docker-compose up --build
+```
+
+### En production (prévu)
+
+* Frontend : Vercel / Netlify
+* Backend : Render / Railway / VPS
+* DB : MongoDB Atlas / PlanetScale
+
+---
+
+## 📁 Structure du projet
+
+```bash
+da-tcg-bot/
+├── public/                 # Fichiers statiques
+├── src/                    # Frontend React
+│   ├── components/         # Composants UI
+│   ├── pages/              # Pages principales
+│   ├── api/                # Appels API
+│   ├── hooks/              # Hooks React
+│   └── utils/              # Fonctions utilitaires
+├── server/                 # Backend (Express ? à définir)
+├── .env                    # Variables d’environnement
+├── tailwind.config.js      # Config Tailwind
+└── package.json            # Dépendances projet
+```
+
+---
+
+## 📌 TODO (Roadmap rapide)
+
+* [ ] Implémenter la recherche par jeu/extension
+* [ ] Intégration API Cardmarket
+* [ ] Stockage et visualisation de l’historique de prix
+* [ ] Ajout des alertes personnalisables
+* [ ] Ajout d’un dashboard portfolio
+* [ ] Authentification utilisateur
+
+---
+
+## 👥 Contributions
+
+Les PR sont bienvenues. Si tu veux contribuer, commence par forker, cloner, créer une branche, coder, push et ouvrir une PR.
+
+---
+
+## 📬 Contact
+
+Mike (snkmike) — *via GitHub ou Discord (prochainement)*
+
+---
+
+## 🧠 License
+
+Projet open-source sous [MIT License](LICENSE).
