@@ -1,12 +1,10 @@
+// LorcanaResults.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Sparkles } from 'lucide-react';
 import Select from 'react-select';
 
-export default function LorcanaResults({ results, setSelectedCard, groupBySet, handleAddCardsToPortfolio }) {
-  //console.log("🧪 Type de handleAddCardsToPortfolio:", typeof handleAddCardsToPortfolio);
-  //console.log("✅ LorcanaResults props:", typeof handleAddCardsToPortfolio);
-
+export default function LorcanaResults({ results = [], setSelectedCard, groupBySet, handleAddCardsToPortfolio = () => {} }) {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
   const [userId, setUserId] = useState('');
@@ -21,14 +19,13 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
     fetchUser();
 
     const fetchCollections = async () => {
-      const { data, error } = await supabase.from('collections').select('name');
+      const { data } = await supabase.from('collections').select('name');
       if (data) setCollections(data.map(c => c.name));
     };
     fetchCollections();
   }, []);
 
   const collectionOptions = collections.map(name => ({ value: name, label: name }));
-  //console.log('🎴 Résultats reçus dans LorcanaResults :', results);
 
   const customStyles = {
     control: (base, state) => ({
@@ -36,9 +33,7 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
       borderRadius: '0.5rem',
       borderColor: state.isFocused ? '#16a34a' : '#d1d5db',
       boxShadow: state.isFocused ? '0 0 0 1px #16a34a' : 'none',
-      '&:hover': {
-        borderColor: '#16a34a',
-      },
+      '&:hover': { borderColor: '#16a34a' },
       padding: '2px 4px',
       minHeight: '38px',
     }),
@@ -58,8 +53,7 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
   const toggleCardSelection = (card) => {
     setSelectedCards((prev) => {
       const exists = prev.find(c => c.id === card.id);
-      if (exists) return prev.filter(c => c.id !== card.id);
-      return [...prev, { ...card, quantity: 1, isFoil: false }];
+      return exists ? prev.filter(c => c.id !== card.id) : [...prev, { ...card, quantity: 1, isFoil: false }];
     });
   };
 
@@ -73,7 +67,7 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
     if (selectedCards.length === 0) return showToast('❌ Aucune carte sélectionnée');
 
     const expandedCards = selectedCards.flatMap(card => {
-      const { id, quantity = 1, ...rest } = card;
+      const { quantity = 1, ...rest } = card;
       return Array.from({ length: quantity }, () => ({ ...rest }));
     });
 
@@ -90,7 +84,7 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
 
   const renderCard = (card, isSelected, selected) => (
     <div
-      key={card.id}
+      key={`${card.id || card.name}-${card.collector_number}`}
       onClick={() => toggleCardSelection(card)}
       className={`relative bg-white border p-3 rounded-lg shadow-sm hover:shadow-md flex flex-col justify-between cursor-pointer ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}
     >
@@ -145,9 +139,7 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
         <button
           onClick={(e) => { e.stopPropagation(); handleSingleAdd(card); }}
           disabled={!selectedCollection}
-          className={`mt-3 text-sm px-3 py-1 rounded ${
-            selectedCollection ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-          }`}
+          className={`mt-3 text-sm px-3 py-1 rounded ${selectedCollection ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
         >
           Ajouter à la collection
         </button>
@@ -185,7 +177,9 @@ export default function LorcanaResults({ results, setSelectedCard, groupBySet, h
         )}
       </div>
 
-      {groupBySet ? (
+      {(!results || results.length === 0) ? (
+        <div className="text-center text-red-500 text-sm mt-4">Aucune carte trouvée.</div>
+      ) : groupBySet ? (
         Object.entries(
           results.reduce((acc, card) => {
             const set = card.set_name || 'Set inconnu';

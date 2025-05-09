@@ -5,7 +5,7 @@ import CardResult from '../cards/CardResult';
 import SetResult from '../cards/SetResult';
 
 import { useState, useEffect } from 'react';
-import { fetchLorcanaData } from '../../utils/api/fetchLorcanaData';
+import { fetchLorcanaData, fetchCardByNumber } from '../../utils/api/fetchLorcanaData';
 
 export default function SearchTab({
   searchQuery,
@@ -30,11 +30,29 @@ export default function SearchTab({
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = (query) => {
-    if (query.length < 3) return;
-    setIsLoading(true);
-    setSearchQuery(query);
-    setTimeout(() => setIsLoading(false), 500);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.setSearchResultsFromSearchBox = setSearchResults;
+    }
+  }, []);
+
+  const handleSearch = async (query) => {
+    console.log('📌 handleSearch appelée avec:', query);
+
+    if (typeof query === 'object' && query.type === 'number') {
+      setIsLoading(true);
+      const results = await fetchCardByNumber(query.set, query.number);
+      console.log('📥 Résultats fetchCardByNumber:', results);
+      setSearchResults(results);
+      setSearchQuery(query.number);
+      setTimeout(() => setIsLoading(false), 500);
+      return results;
+    } else if (typeof query === 'string') {
+      if (query.length < 3) return;
+      setIsLoading(true);
+      setSearchQuery(query);
+      setTimeout(() => setIsLoading(false), 500);
+    }
   };
 
   useEffect(() => {
@@ -87,6 +105,7 @@ export default function SearchTab({
             results={searchResults}
             setSelectedCard={setSelectedCard}
             groupBySet={showSetResults}
+            handleAddCardsToPortfolio={() => {}}
           />
         ) : (
           <CardResult
