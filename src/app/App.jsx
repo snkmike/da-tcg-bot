@@ -46,11 +46,28 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') return;
+    // Ne pas faire de recherche si on vient de faire une recherche par numéro
+    if (window.lastSearchWasById) {
+      window.lastSearchWasById = false;
+      return;
+    }
+
+    // Ne rien faire s'il n'y a pas de requête valide
+    if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') {
+      return;
+    }
+    
+    // Ne pas écraser les résultats existants s'ils sont présents
+    if (searchResults.length > 0) {
+      return;
+    }
+    
     const doSearch = async () => {
+      console.log('🔄 App.jsx - Recherche par nom déclenchée:', searchQuery);
       const results = await fetchLorcanaData(
         searchQuery, filterSet, minPrice, maxPrice, selectedRarities, showSetResults
       );
+      console.log('📦 App.jsx - Résultats reçus:', results?.length || 0);
       setSearchResults(results);
     };
     doSearch();

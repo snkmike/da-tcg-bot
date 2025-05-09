@@ -53,9 +53,6 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
   }
 }
 
-//This export is used in src/components/search/SearchBox.jsx
-// this is usefull for the search bar in the header and the search page by number.
-
 export async function fetchCardByNumber(setId, number) {
   try {
     const url = `https://api.lorcast.com/v0/cards/${setId}/${number}`;

@@ -9,61 +9,64 @@ const gameOptions = [
   { value: 'Lorcana', label: 'Lorcana' },
 ];
 
-export default function SearchBox({ localQuery, setLocalQuery, filterGame, setFilterGame, onSearch, isLoading }) {
-  const [searchMode, setSearchMode] = useState('name');
-  const [lorcanaSets, setLorcanaSets] = useState([]);
-  const [selectedSet, setSelectedSet] = useState(null);
+export default function SearchBox({ localQuery, setLocalQuery, filterGame, setFilterGame, onSearch, onSearchByNumber, isLoading }) {
   const [inputValue, setInputValue] = useState('');
+  const [setId, setSetId] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
   const [noResult, setNoResult] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [debounceTimeout, setDebounceTimeout] = useState(null);
 
   useEffect(() => {
-    if (filterGame === 'Lorcana' && searchMode === 'number') {
-      fetch('https://api.lorcast.com/v0/sets')
-        .then(res => res.json())
-        .then(data => {
-          const options = (data.results || []).map(set => ({
-            value: set.code,
-            label: set.name
-          }));
-          console.log("📦 Sets chargés:", options);
-          setLorcanaSets(options);
-        });
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
     }
-  }, [filterGame, searchMode]);
 
-  useEffect(() => {
-    const executeSearch = async () => {
-      console.log("🔍 Recherche en cours avec :", { inputValue, selectedSet, searchMode });
-      if (filterGame !== 'all' && typeof inputValue === 'string' && inputValue.length > 2) {
-        let res;
-        if (searchMode === 'name') {
-          console.log("🔍 Recherche par nom :", inputValue);
-          res = await onSearch(inputValue);
-        } else if (searchMode === 'number' && selectedSet && inputValue.length > 0) {
-          console.log("🔍 Recherche par numéro :", { set: selectedSet.value, number: inputValue.trim() });
-          res = await onSearch({ type: 'number', set: selectedSet.value, number: inputValue.trim() });
-        }
-        console.log("📥 Résultats reçus:", res);
-        setNoResult(Array.isArray(res) && res.length === 0);
-        if (Array.isArray(res)) {
-          setLocalQuery(inputValue);
-          if (typeof window !== 'undefined') {
-            console.log("📤 Mise à jour manuelle des résultats depuis SearchBox");
-            if (typeof window.setSearchResultsFromSearchBox === 'function') {
-              window.setSearchResultsFromSearchBox(res);
+    const timeout = setTimeout(() => {
+      const executeSearch = async () => {
+        console.log("🔍 Recherche en cours avec :", { inputValue });
+        if (filterGame !== 'all' && typeof inputValue === 'string' && inputValue.length > 2) {
+          setLoading(true);
+          try {
+            const res = await onSearch(inputValue);
+            console.log("📥 Résultats reçus:", res);
+            setNoResult(Array.isArray(res) && res.length === 0);
+            if (Array.isArray(res)) {
+              setLocalQuery(inputValue);
             }
+          } catch (error) {
+            console.error("❌ Erreur lors de la recherche:", error);
+            setNoResult(true);
+          } finally {
+            setLoading(false);
           }
         }
-      }
-    };
-    executeSearch();
-  }, [inputValue, filterGame, selectedSet]);
+      };
+      executeSearch();
+    }, 500);
+
+    setDebounceTimeout(timeout);
+    return () => clearTimeout(timeout);
+  }, [inputValue, filterGame]);
+
+  const handleSearchByNumberClick = async () => {
+    if (!setId || !cardNumber) return;
+    setLoading(true);
+    try {
+      await onSearchByNumber(setId, cardNumber);
+      setInputValue(''); // Clear the search input
+    } catch (error) {
+      console.error('❌ Error during search by number:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const selectedGame = gameOptions.find(g => g.value === filterGame);
 
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center mb-4">
         <div className="md:col-span-1">
           <Select
             options={gameOptions}
@@ -73,7 +76,7 @@ export default function SearchBox({ localQuery, setLocalQuery, filterGame, setFi
             classNamePrefix="react-select"
           />
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-3 relative">
           <input
             type="text"
             value={inputValue}
@@ -82,63 +85,53 @@ export default function SearchBox({ localQuery, setLocalQuery, filterGame, setFi
                 setInputValue(e.target.value);
               }
             }}
-            placeholder={searchMode === 'name' ? "Rechercher une carte" : "Numéro (ex: 207)"}
+            placeholder="Rechercher une carte"
             className="w-full border rounded p-2"
           />
-          {filterGame === "Lorcana" && (
-            <>
-              <div className="flex gap-4 mt-2">
-                <label>
-                  <input
-                    type="radio"
-                    value="name"
-                    checked={searchMode === 'name'}
-                    onChange={() => setSearchMode('name')}
-                  /> Par nom
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    value="number"
-                    checked={searchMode === 'number'}
-                    onChange={() => setSearchMode('number')}
-                  /> Par numéro
-                </label>
-              </div>
-              {searchMode === 'number' && (
-                <div className="mt-2">
-                  <Select
-                    options={lorcanaSets}
-                    value={selectedSet}
-                    onChange={(option) => setSelectedSet(option)}
-                    placeholder="Sélectionner un set Lorcana"
-                  />
-                </div>
-              )}
-            </>
+          {loading && (
+            <div className="absolute top-1/2 right-4 transform -translate-y-1/2">
+              <svg className="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </div>
           )}
           {noResult && (
             <div className="mt-2 text-red-500 text-sm">Aucune carte trouvée pour cette recherche.</div>
           )}
         </div>
-        <div>
-          <button
-            onClick={async () => {
-              let res;
-              if (searchMode === 'name') {
-                res = await onSearch(inputValue);
-              } else if (searchMode === 'number' && selectedSet && inputValue.length > 0) {
-                res = await onSearch({ type: 'number', set: selectedSet.value, number: inputValue.trim() });
-              }
-              setNoResult(Array.isArray(res) && res.length === 0);
-            }}
-            className="bg-blue-500 text-white py-2 px-4 rounded"
-            disabled={isLoading}
-          >
-            Rechercher
-          </button>
-        </div>
       </div>
+      {filterGame === 'Lorcana' && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <div className="md:col-span-2">
+            <input
+              type="text"
+              placeholder="Set ID (ex: TFC)"
+              value={setId}
+              onChange={(e) => setSetId(e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <input
+              type="text"
+              placeholder="Numéro (ex: 207)"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(e.target.value)}
+              className="w-full border rounded p-2"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <button
+              onClick={handleSearchByNumberClick}
+              className="w-full bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600 disabled:bg-gray-400"
+              disabled={!setId || !cardNumber || loading}
+            >
+              {loading ? 'Recherche...' : '🔍 Rechercher par numéro'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
