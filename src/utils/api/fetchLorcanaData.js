@@ -8,11 +8,10 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
   try {
     const nameEncoded = encodeURIComponent(query || 'Elsa');
     const response = await fetch(`https://api.lorcast.com/v0/cards/search?q=${nameEncoded}`);
-    const json = await response.json();
-
-    const formatted = (json.results || []).map(card => ({
+    const json = await response.json();    const formatted = (json.results || []).map(card => ({
       id: card.id,
       name: card.name,
+      version: card.version || null,
       set_name: card.set?.name || 'Set inconnu',
       rarity: card.rarity,
       image: card.image_uris?.digital?.normal || '',
@@ -83,10 +82,10 @@ export async function fetchCardByNumber(setId, numbers) {
         console.warn(`❌ Carte ${setId}/${number} introuvable`);
         return null;
       }
-      const card = await response.json();
-      return {
+      const card = await response.json();      return {
         id: card.id,
         name: card.name,
+        version: card.version || null,
         set_name: card.set?.name || 'Set inconnu',
         rarity: card.rarity,
         image: card.image_uris?.digital?.normal || '',

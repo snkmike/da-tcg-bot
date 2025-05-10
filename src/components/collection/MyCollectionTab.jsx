@@ -53,8 +53,9 @@ export default function MyCollectionTab({ user }) {
           collections={collections}
           collectionStats={collectionStats}
           onSelectCollection={async (col) => {
+            console.log('Collection sélectionnée:', col); // Debug
             setSelectedCollection(col);
-            await fetchCardsForCollection(col.name);
+            await fetchCardsForCollection(col.id); // Utiliser col.id au lieu de col.name
           }}
           onRefresh={fetchCollections}
           onDeleteSuccess={fetchCollections}
@@ -66,6 +67,7 @@ export default function MyCollectionTab({ user }) {
           collection={selectedCollection}
           cards={cards}
           onBack={() => setSelectedCollection(null)}
+          fetchCardsForCollection={fetchCardsForCollection}
         />
       )}
     </div>

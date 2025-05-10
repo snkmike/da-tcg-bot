@@ -1,0 +1,7 @@
+schemaname,tablename,tableowner,tablespace,hasindexes,hasrules,hastriggers,rowsecurity
+public,card_printings,postgres,null,true,false,true,false
+public,cards,postgres,null,true,false,true,false
+public,sets,postgres,null,true,false,true,false
+public,price_history,postgres,null,true,false,true,false
+public,collections,postgres,null,true,false,true,false
+public,user_collections,postgres,null,true,false,true,false

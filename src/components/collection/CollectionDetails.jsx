@@ -1,9 +1,15 @@
 // CollectionDetails.jsx - Détail d'une collection spécifique
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchFilters from '../search/SearchFilters';
+import CollectionCardItem from '../cards/CollectionCardItem';
 import groupCards from './groupCards';
 
-export default function CollectionDetails({ collection, cards, onBack }) {
+export default function CollectionDetails({ 
+  collection, 
+  cards, 
+  onBack,
+  fetchCardsForCollection
+}) {
   const [filterSet, setFilterSet] = useState('all');
   const [selectedRarities, setSelectedRarities] = useState([]);
   const [minPrice, setMinPrice] = useState('');
@@ -12,6 +18,33 @@ export default function CollectionDetails({ collection, cards, onBack }) {
   const [filterKey] = useState(0);
   const [sortKey, setSortKey] = useState('alpha');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
+  useEffect(() => {
+    // Vérifier si on doit mettre à jour les prix (toutes les heures)
+    const shouldUpdate = () => {
+      if (!lastUpdateTime) return true;
+      const hoursSinceLastUpdate = (Date.now() - lastUpdateTime) / (1000 * 60 * 60);
+      return hoursSinceLastUpdate >= 1;
+    };
+
+    if (fetchCardsForCollection && collection?.id && shouldUpdate()) {
+      console.log('🔄 Mise à jour des prix programmée');
+      fetchCardsForCollection(collection.id);
+      setLastUpdateTime(Date.now());
+    }
+
+    // Programmer la prochaine mise à jour
+    const nextUpdate = setTimeout(() => {
+      if (shouldUpdate()) {
+        console.log('⏰ Mise à jour automatique des prix');
+        fetchCardsForCollection(collection.id);
+        setLastUpdateTime(Date.now());
+      }
+    }, 3600000); // 1 heure
+
+    return () => clearTimeout(nextUpdate);
+  }, [collection?.id, fetchCardsForCollection, lastUpdateTime]);
 
   const groupedCards = groupCards(cards);
 
@@ -22,7 +55,8 @@ export default function CollectionDetails({ collection, cards, onBack }) {
     if (maxPrice && (parseFloat(card.isFoil ? card.foil_price : card.price) || 0) > parseFloat(maxPrice)) return false;
     return true;
   });
-    const sortedCards = [...filteredCards].sort((a, b) => {
+
+  const sortedCards = [...filteredCards].sort((a, b) => {
     const valA = sortKey === 'price' ? parseFloat(a.price || 0) :
                 sortKey === 'number' ? parseInt(a.collector_number || 0) :
                 a.name?.toLowerCase();
@@ -33,7 +67,7 @@ export default function CollectionDetails({ collection, cards, onBack }) {
     if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
     return 0;
-    });
+  });
 
   return (
     <div>
@@ -61,28 +95,14 @@ export default function CollectionDetails({ collection, cards, onBack }) {
         setSortKey={setSortKey}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
-      />
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+      />      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
         {sortedCards.map(card => (
-          <div key={`${card.name}_${card.set_name}_${card.collector_number}_${card.isFoil}`} className="relative bg-white p-3 border rounded shadow">
-            {card.quantity > 1 && (
-              <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full shadow">
-                x{card.quantity}
-              </div>
-            )}
-            {card.isFoil && (
-              <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full shadow">
-                Foil
-              </div>
-            )}
-            <img src={card.image} alt={card.name} className="w-full h-auto object-contain mb-2 rounded" />
-            <h3 className="text-sm font-semibold truncate">{card.name}</h3>
-            <p className="text-xs text-gray-600 truncate">{card.set_name}</p>
-            <p className="text-xs text-gray-600">#{card.collector_number} - {card.rarity}</p>
-            <p className="text-sm text-green-600">${card.price || '-'}</p>
-            {card.foil_price && <p className="text-sm text-purple-500">Foil: ${card.foil_price}</p>}
-          </div>
+          <CollectionCardItem
+            key={`${card.name}_${card.set_name}_${card.collector_number}_${card.isFoil}`}
+            card={card}
+            onUpdate={() => fetchCardsForCollection(collection.id)}
+            collectionId={collection.id}
+          />
         ))}
       </div>
     </div>

@@ -48,11 +48,11 @@ export default function CollectionList({
         <p className="text-gray-500">Aucune collection disponible.</p>
       ) : (
         collections.map((col) => {
-          const stats = collectionStats[col.name] || { count: 0, value: 0 };
+          const stats = collectionStats[col.id] || { count: 0, value: 0 };
           const date = new Date(col.created_at).toLocaleDateString();
           return (
             <div
-              key={col.name}
+              key={col.id}
               onClick={() => onSelectCollection(col)}
               className="relative bg-white border rounded-xl shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-between p-4"
             >
@@ -62,8 +62,8 @@ export default function CollectionList({
               </div>
 
               <div className="flex items-center gap-4">
-                <p className="text-md text-gray-500">{stats.count} cartes</p>
-                <p className="text-md text-green-700 font-bold">💰 {stats.value.toFixed(2)} €</p>
+                <p className="text-md text-gray-500">{stats.count || 0} cartes</p>
+                <p className="text-md text-green-700 font-bold">💰 {(stats.value || 0).toFixed(2)} €</p>
 
                 <button
                   className="text-red-500 hover:text-red-700 text-sm"
