@@ -130,6 +130,10 @@ da-tcg-bot/
 
 ## 📌 TODO (Roadmap rapide)
 
+### Général
+* [x] Authentification utilisateur
+* [x] Utilisation pour Lorcana de l'API Lorcast (https://lorcast.com/docs/api)
+
 ### Lorcana
 * [x] Implémenter la recherche par jeu/extension
 * [x] Implémenter un systeme d'ajout rapide et optimisé
@@ -138,7 +142,7 @@ da-tcg-bot/
 * [ ] Stockage et visualisation de l’historique de prix
 * [ ] Ajout des alertes personnalisables
 * [ ] Ajout d’un dashboard portfolio
-* [x] Authentification utilisateur
+
 
 ### Autres jeux (Magic, Yu-gi-Ho, Pokémon)
 * [ ] Implémenter la recherche par jeu/extension
@@ -146,7 +150,7 @@ da-tcg-bot/
 * [ ] Stockage et visualisation de l’historique de prix
 * [ ] Ajout des alertes personnalisables
 * [ ] Ajout d’un dashboard portfolio
-* [ ] Authentification utilisateur
+
 
 ---
 
