@@ -26,12 +26,14 @@ export default function SearchTab({
   selectedRarities,
   setSelectedRarities,
   filterKey
+  
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [localSearchResults, setLocalSearchResults] = useState([]);
   const [duplicateWarnings, setDuplicateWarnings] = useState(null);
   const [isNumberSearchOpen, setIsNumberSearchOpen] = useState(false);
-
+  const [sortKey, setSortKey] = useState('alpha');
+  const [sortOrder, setSortOrder] = useState('asc');
   // Synchroniser les résultats externes avec les résultats locaux
   useEffect(() => {
     if (externalSearchResults?.length > 0) {
@@ -150,6 +152,10 @@ export default function SearchTab({
         setSelectedRarities={setSelectedRarities}
         filterKey={filterKey}
         isDisabled={isNumberSearchOpen}
+        sortKey={sortKey}
+        setSortKey={setSortKey}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
       />
 
       {duplicateWarnings && duplicateWarnings.length > 0 && (
@@ -180,7 +186,7 @@ export default function SearchTab({
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
+      <div className="bg-white rounded-lg shadow-sm p-4">
         {console.log('🎯 Rendu des résultats:', {
           hasLorcanaComponent: !!LorcanaComponent,
           localSearchResults,
@@ -193,6 +199,8 @@ export default function SearchTab({
             setSelectedCard={setSelectedCard}
             groupBySet={showSetResults}
             handleAddCardsToPortfolio={() => {}}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
           />
         ) : (
           <CardResult

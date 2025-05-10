@@ -4,7 +4,7 @@ import { supabase } from '../../supabaseClient';
 import { Sparkles } from 'lucide-react';
 import Select from 'react-select';
 
-export default function LorcanaResults({ results = [], setSelectedCard, groupBySet, handleAddCardsToPortfolio = () => {} }) {
+export default function LorcanaResults({ results = [], setSelectedCard, groupBySet, handleAddCardsToPortfolio = () => {}, sortKey = 'alpha', sortOrder = 'asc' }) {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('');
   const [userId, setUserId] = useState('');
@@ -25,6 +25,24 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
     fetchCollections();
   }, []);
 
+  const sortedResults = [...results].sort((a, b) => {
+    let valA, valB;
+    if (sortKey === 'price') {
+      valA = parseFloat(a.price || 0);
+      valB = parseFloat(b.price || 0);
+    } else if (sortKey === 'number') {
+      valA = parseInt(a.collector_number || 0);
+      valB = parseInt(b.collector_number || 0);
+    } else {
+      valA = a.name?.toLowerCase() || '';
+      valB = b.name?.toLowerCase() || '';
+    }
+
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   const collectionOptions = collections.map(name => ({ value: name, label: name }));
 
   const customStyles = {
@@ -37,11 +55,7 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
       padding: '2px 4px',
       minHeight: '38px',
     }),
-    menu: base => ({
-      ...base,
-      borderRadius: '0.5rem',
-      zIndex: 10,
-    }),
+    menu: base => ({ ...base, borderRadius: '0.5rem', zIndex: 10 }),
     option: (base, { isFocused, isSelected }) => ({
       ...base,
       backgroundColor: isSelected ? '#16a34a' : isFocused ? '#bbf7d0' : 'white',
@@ -177,11 +191,11 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
         )}
       </div>
 
-      {(!results || results.length === 0) ? (
+      {(!sortedResults || sortedResults.length === 0) ? (
         <div className="text-center text-red-500 text-sm mt-4">Aucune carte trouvée.</div>
       ) : groupBySet ? (
         Object.entries(
-          results.reduce((acc, card) => {
+          sortedResults.reduce((acc, card) => {
             const set = card.set_name || 'Set inconnu';
             if (!acc[set]) acc[set] = [];
             acc[set].push(card);
@@ -201,7 +215,7 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
         ))
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-          {results.map(card => {
+          {sortedResults.map(card => {
             const selected = selectedCards.find(c => c.id === card.id);
             const isSelected = !!selected;
             return renderCard(card, isSelected, selected);
