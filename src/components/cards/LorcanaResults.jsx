@@ -47,19 +47,26 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
     }),
   };
 
+  const getCardUniqueKey = (card) => `${card.id}_${card.collector_number}_${card.set_name}_${card.version || ''}_${card.isFoil}`;
+
   const toggleCardSelection = (card) => {
     setSelectedCards((prev) => {
-      const exists = prev.find(c => c.id === card.id);
-      return exists ? prev.filter(c => c.id !== card.id) : [...prev, { ...card, quantity: 1, isFoil: false }];
+      const key = getCardUniqueKey(card);
+      const exists = prev.find(c => getCardUniqueKey(c) === key);
+      if (exists) {
+        return prev.filter(c => getCardUniqueKey(c) !== key);
+      } else {
+        return [...prev, { ...card, quantity: 1, isFoil: card.isFoil || false }];
+      }
     });
   };
 
-  const updateQuantity = (id, qty) => {
-    setSelectedCards(prev => prev.map(c => c.id === id ? { ...c, quantity: qty } : c));
+  const updateQuantity = (id, qty, card) => {
+    setSelectedCards(prev => prev.map(c => getCardUniqueKey(c) === getCardUniqueKey(card) ? { ...c, quantity: qty } : c));
   };
 
-  const toggleFoil = (id) => {
-    setSelectedCards(prev => prev.map(c => c.id === id ? { ...c, isFoil: !c.isFoil } : c));
+  const toggleFoil = (id, card) => {
+    setSelectedCards(prev => prev.map(c => getCardUniqueKey(c) === getCardUniqueKey(card) ? { ...c, isFoil: !c.isFoil } : c));
   };
 
   const showToast = (message) => {
@@ -73,77 +80,90 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
     if (selectedCards.length === 0) return showToast("❌ Aucune carte sélectionnée");
 
     try {
+      console.log('🟢 Cartes sélectionnées pour ajout:', selectedCards.map(c => ({
+        id: c.id,
+        name: c.name,
+        set_name: c.set_name,
+        collector_number: c.collector_number,
+        version: c.version,
+        isFoil: c.isFoil,
+        quantity: c.quantity
+      })));
       for (const card of selectedCards) {
         let cardId, setId, printingId;
 
-        // 1. Vérifier si la carte existe déjà
-        const { data: existingCard } = await supabase
+        let cardQuery = supabase
           .from('cards')
           .select('id')
           .eq('name', card.name)
-          .eq('game', 'Lorcana')
-          .maybeSingle();
+          .eq('game', 'Lorcana');
+        const { data: existingCard } = await cardQuery.maybeSingle();
+        console.log('🔎 Résultat recherche carte:', existingCard);
 
         if (existingCard) {
           cardId = existingCard.id;
         } else {
-          // 2. Créer la carte si elle n'existe pas
-          const { data: newCard } = await supabase.from('cards').insert({
+          const cardInsert = {
             name: card.name,
             game: 'Lorcana',
             type: card.type || null,
             rarity: card.rarity || null,
             image_url: card.image || null,
-            description: card.oracle_text || null,
-            version: card.version || null
-          }).select('id').maybeSingle();
+            description: card.oracle_text || null
+          };
+          const { data: newCard } = await supabase.from('cards').insert(cardInsert).select('id').maybeSingle();
           cardId = newCard?.id;
+          console.log('🆕 Carte créée:', newCard);
         }
 
-        // 3. Vérifier si le set existe déjà
         const { data: existingSet } = await supabase
           .from('sets')
           .select('id')
           .eq('name', card.set_name)
           .eq('game', 'Lorcana')
           .maybeSingle();
+        console.log('🔎 Résultat recherche set:', existingSet);
 
         if (existingSet) {
           setId = existingSet.id;
         } else {
-          // 4. Créer le set s'il n'existe pas
           const { data: newSet } = await supabase.from('sets').insert({
             name: card.set_name,
             game: 'Lorcana',
             release_date: new Date().toISOString()
           }).select('id').maybeSingle();
           setId = newSet?.id;
+          console.log('🆕 Set créé:', newSet);
         }
 
-        // 5. Vérifier si le printing existe déjà
         const { data: existingPrinting } = await supabase
           .from('card_printings')
-          .select('id')
+          .select('id, image_url, version')
           .eq('card_id', cardId)
           .eq('set_id', setId)
           .eq('collector_number', card.collector_number?.toString())
+          .eq('version', card.version || null)
           .maybeSingle();
+        console.log('🔎 Résultat recherche printing:', existingPrinting);
 
         if (existingPrinting) {
           printingId = existingPrinting.id;
+          card.image = existingPrinting.image_url || card.image;
         } else {
-          // 6. Créer le printing s'il n'existe pas
+          const printingImage = card.image || null;
           const { data: newPrinting } = await supabase.from('card_printings').insert({
             card_id: cardId,
             set_id: setId,
             collector_number: card.collector_number?.toString(),
             language: 'en',
-            image_url: card.image
-          }).select('id').maybeSingle();
+            image_url: printingImage,
+            version: card.version || null
+          }).select('id, image_url, version').maybeSingle();
           printingId = newPrinting?.id;
+          card.image = newPrinting?.image_url || card.image;
+          console.log('🆕 Printing créé:', newPrinting);
         }
 
-        // 7. Vérifier si la carte est déjà dans la collection
         const { data: existingInCollection } = await supabase
           .from('user_collections')
           .select('quantity')
@@ -152,9 +172,9 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
           .eq('card_printing_id', printingId)
           .eq('is_foil', card.isFoil)
           .maybeSingle();
+        console.log('🔎 Résultat recherche dans collection:', existingInCollection);
 
         if (existingInCollection) {
-          // 8. Mettre à jour la quantité si elle existe déjà
           await supabase
             .from('user_collections')
             .update({
@@ -164,8 +184,8 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
             .eq('collection_id', selectedCollection.id)
             .eq('card_printing_id', printingId)
             .eq('is_foil', card.isFoil);
+          console.log('✏️ Quantité mise à jour');
         } else {
-          // 9. Ajouter à la collection si elle n'existe pas
           await supabase.from('user_collections').insert({
             user_id: userId,
             collection_id: selectedCollection.id,
@@ -174,6 +194,7 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
             is_foil: card.isFoil,
             added_at: new Date().toISOString()
           });
+          console.log('➕ Carte ajoutée à la collection');
         }
       }
       showToast(`✅ ${selectedCards.length} carte(s) ajoutée(s)`);
@@ -192,16 +213,17 @@ export default function LorcanaResults({ results = [], setSelectedCard, groupByS
   const renderGroup = (cards) => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
       {cards.map(card => {
-        const selected = selectedCards.find(c => c.id === card.id);
+        const selected = selectedCards.find(c => getCardUniqueKey(c) === getCardUniqueKey(card));
         const isSelected = !!selected;
-        return (          <SearchCardItem
-             key={`${card.id || card.name}-${card.collector_number}`}
+        return (
+          <SearchCardItem
+            key={`${card.id || card.name}-${card.collector_number}`}
             card={card}
             isSelected={isSelected}
             selected={selected || {}}
-            toggleCardSelection={toggleCardSelection}
-            updateQuantity={updateQuantity}
-            toggleFoil={toggleFoil}
+            toggleCardSelection={() => toggleCardSelection(card)}
+            updateQuantity={(id, qty) => updateQuantity(id, qty, card)}
+            toggleFoil={(id) => toggleFoil(id, card)}
             handleSingleAdd={handleSingleAdd}
             selectedCollection={selectedCollection}
           />

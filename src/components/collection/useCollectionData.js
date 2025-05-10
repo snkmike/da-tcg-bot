@@ -240,7 +240,9 @@ export default function useCollectionData(user) {
             id,
             collector_number,
             set_code,
-            image_url,          price_histories:price_history(
+            image_url,
+            version,
+            price_histories:price_history(
               price,
               date
             ),
@@ -273,30 +275,39 @@ export default function useCollectionData(user) {
         return;
       }
 
+      console.log('🟢 Données brutes Supabase:', data);
+
       const formattedCards = data
         .filter(item => item.card_printing)
-        .map(item => {          const priceHistories = item.card_printing.price_histories || [];
-          // Temporarily not filtering by is_foil until migration is run
+        .map(item => {
+          if (!item.card_printing.card || !item.card_printing.set) {
+            console.warn('❗ Carte incomplète dans user_collections:', item);
+            return null;
+          }
+          const priceHistories = item.card_printing.price_histories || [];
           const latestPrice = priceHistories
             .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
 
-          return {
+          const cardObj = {
             id: item.card_printing.id,
             name: item.card_printing.card.name,
             rarity: item.card_printing.card.rarity,
             type: item.card_printing.card.type,
-            version: item.card_printing.card.version,
+            version: item.card_printing.version || item.card_printing.card.version || item.version || null,
             set_name: item.card_printing.set.name,
             set_code: item.card_printing.set_code || item.card_printing.set.code,
             collector_number: item.card_printing.collector_number,
-            image: item.card_printing.card.image_url || item.card_printing.image_url,
+            image: item.card_printing.image_url || item.card_printing.card.image_url,
             quantity: item.quantity,
             isFoil: item.is_foil,
             price: latestPrice
           };
-        });
+          console.log('🟢 Carte formatée:', cardObj);
+          return cardObj;
+        })
+        .filter(Boolean);
 
-      console.log('✅ Cartes formatées:', formattedCards);
+      console.log('✅ Cartes formatées finales:', formattedCards);
 
       // Mettre à jour les prix
       await updatePricesForCards(formattedCards);

@@ -12,7 +12,8 @@ export default function CardItem({
   onClick,
   topLeftBadge,
   topRightBadge
-}) {  return (
+}) {  
+  return (
     <div
       onClick={onClick}
       className={`relative bg-white border p-3 rounded-lg shadow-sm hover:shadow-md flex flex-col ${className}`}
@@ -32,12 +33,12 @@ export default function CardItem({
       {/* Informations statiques de la carte */}
       <div className="mb-2">
         <img src={card.image} alt={card.name} className="w-full h-auto object-contain mb-2 rounded" />
-        <h3 className="text-sm font-semibold leading-tight truncate">
-          {card.name}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">{card.name}</span>
           {card.version && (
-            <span className="ml-1 font-normal italic text-gray-600">• {card.version}</span>
+            <span className="text-xs font-normal italic text-gray-600 whitespace-nowrap truncate">• {card.version}</span>
           )}
-        </h3>
+        </div>
         <p className="text-xs text-gray-600 truncate">Set: {card.set_name}</p>
         <p className="text-xs text-gray-600">#{card.collector_number} - {card.rarity}</p>
         <div className="text-sm mt-1">

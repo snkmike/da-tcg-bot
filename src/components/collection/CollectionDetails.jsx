@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import SearchFilters from '../search/SearchFilters';
 import CollectionCardItem from '../cards/CollectionCardItem';
-import groupCards from './groupCards';
 
 export default function CollectionDetails({ 
   collection, 
@@ -46,9 +45,7 @@ export default function CollectionDetails({
     return () => clearTimeout(nextUpdate);
   }, [collection?.id, fetchCardsForCollection, lastUpdateTime]);
 
-  const groupedCards = groupCards(cards);
-
-  const filteredCards = Object.values(groupedCards).filter(card => {
+  const filteredCards = cards.filter(card => {
     if (filterSet !== 'all' && card.set_name !== filterSet) return false;
     if (selectedRarities.length > 0 && !selectedRarities.includes(card.rarity?.toLowerCase())) return false;
     if (minPrice && (parseFloat(card.isFoil ? card.foil_price : card.price) || 0) < parseFloat(minPrice)) return false;
