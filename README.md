@@ -130,6 +130,17 @@ da-tcg-bot/
 
 ## 📌 TODO (Roadmap rapide)
 
+### Lorcana
+* [x] Implémenter la recherche par jeu/extension
+* [x] Implémenter un systeme d'ajout rapide et optimisé
+* [x] Implémenter des filtres commun a tout les résultat Lorcana
+* [ ] Intégration API Cardmarket
+* [ ] Stockage et visualisation de l’historique de prix
+* [ ] Ajout des alertes personnalisables
+* [ ] Ajout d’un dashboard portfolio
+* [x] Authentification utilisateur
+
+### Autres jeux (Magic, Yu-gi-Ho, Pokémon)
 * [ ] Implémenter la recherche par jeu/extension
 * [ ] Intégration API Cardmarket
 * [ ] Stockage et visualisation de l’historique de prix
