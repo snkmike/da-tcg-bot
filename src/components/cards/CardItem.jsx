@@ -42,9 +42,36 @@ export default function CardItem({
         <p className="text-xs text-gray-600 truncate">Set: {card.set_name}</p>
         <p className="text-xs text-gray-600">#{card.collector_number} - {card.rarity}</p>
         <div className="text-sm mt-1">
-          <span className="text-green-600">${card.price || '-'}</span>
-          {card.foil_price && (
-            <span className="text-purple-500 ml-2">Foil: ${card.foil_price}</span>
+          {/* Affichage combiné pour la recherche : toujours prix normal + foil si dispo */}
+          {typeof card.isFoil === 'undefined' ? (
+            <>
+              {card.price !== undefined && (
+                <span className="text-green-600 font-bold">{card.price} €</span>
+              )}
+              {card.foil_price !== undefined && (
+                <span className="text-purple-500 font-bold ml-2">Foil: {card.foil_price} €</span>
+              )}
+              {card.price === undefined && card.foil_price === undefined && (
+                <span className="text-gray-400">-</span>
+              )}
+            </>
+          ) : (
+            // Affichage collection : prix selon type
+            card.isFoil && card.foil_price !== undefined ? (
+              <span className="text-purple-500 font-bold">Foil: {card.foil_price} €</span>
+            ) : (!card.isFoil && card.price !== undefined ? (
+              <span className="text-green-600 font-bold">{card.price} €</span>
+            ) : (
+              card.foil_price !== undefined ? (
+                <span className="text-purple-500 font-bold">Foil: {card.foil_price} €</span>
+              ) : (
+                card.price !== undefined ? (
+                  <span className="text-green-600 font-bold">{card.price} €</span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )
+              )
+            ))
           )}
         </div>
       </div>
