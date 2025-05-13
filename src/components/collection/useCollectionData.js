@@ -9,25 +9,96 @@ export default function useCollectionData(user) {
   const [toast, setToast] = useState('');
   const [collectionStats, setCollectionStats] = useState({});
 
+  const fetchCardsForCollection = async (collectionId) => {
+    if (!collectionId) {
+      console.error('ID de collection manquant');
+      return;
+    }
+
+    try {
+      const selectedCol = collections.find(c => c.id === collectionId);
+      if (!selectedCol) {
+        throw new Error('Collection non trouvée');
+      }
+
+      const { data, error } = await supabase
+        .from('user_collections')
+        .select(`
+          quantity,
+          is_foil,
+          card_printing:card_printing_id (
+            id,
+            collector_number,
+            set_code,
+            image_url,
+            version,
+            price_histories:price_history(
+              price,
+              date,
+              is_foil
+            ),
+            card:card_id (
+              id,
+              name,
+              rarity,
+              type,
+              description,
+              version,
+              image_url
+            ),
+            set:set_id (
+              id,
+              name,
+              code
+            )
+          )
+        `)
+        .eq('collection_id', selectedCol.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.log('⚠️ Aucune carte trouvée pour cette collection');
+        setCards([]);
+        return;
+      }
+
+      const processedCards = data.map(item => ({
+        ...item.card_printing.card,
+        ...item.card_printing,
+        quantity: item.quantity,
+        isFoil: item.is_foil,
+        card_printing_id: item.card_printing.id, // Ajout explicite de card_printing_id
+        image: item.card_printing.image_url, // Ajout de l'image
+        set_name: item.card_printing.set.name, // Ajout du nom du set
+        price: item.card_printing.price_histories.find(p => !p.is_foil)?.price || 0, // Ajout du prix normal
+        foil_price: item.card_printing.price_histories.find(p => p.is_foil)?.price || 0, // Ajout du prix foil
+      }));
+
+      setCards(processedCards);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des cartes:', error);
+      setCards([]);
+    }
+  };
+
   useEffect(() => {
     if (user) fetchCollections();
   }, [user]);
 
   useEffect(() => {
     if (!selectedCollection) return;
-    const channel = supabase
-      .channel('realtime:cards')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, (payload) => {
-        if (payload.new?.collection === selectedCollection?.id) {
-          fetchCardsForCollection(selectedCollection.id);
-        }
-      })
-      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedCollection]);
+    // Vérifier si les cartes sont déjà chargées pour éviter les appels répétés
+    if (cards.length > 0) {
+      console.log('✅ Les cartes sont déjà chargées. Aucun nouvel appel nécessaire.');
+      return;
+    }
+
+    console.log('🔄 Chargement initial des cartes pour la collection');
+    fetchCardsForCollection(selectedCollection.id);
+  }, [selectedCollection]); // Removed cards from dependencies
 
   const showToast = (message) => {
     setToast(message);
@@ -56,62 +127,45 @@ export default function useCollectionData(user) {
       return;
     }
 
-    // Modification de la requête pour inclure correctement price_history
-    const { data, error } = await supabase
-      .from('user_collections')
-      .select(`
-        quantity,
-        is_foil,
-        card_printing:card_printing_id!inner (
-          id,
-          price_histories:price_history(
-            price,
-            date
+    try {
+      const { data, error } = await supabase
+        .from('user_collections')
+        .select(`
+          quantity,
+          is_foil,
+          card_printing:card_printing_id!inner (
+            id,
+            price_histories:price_history(
+              price,
+              date
+            )
           )
-        )
-      `)
-      .eq('collection_id', collectionId)
-      .eq('user_id', user.id);
+        `)
+        .eq('collection_id', collectionId)
+        .eq('user_id', user.id);
 
-    if (!error && data) {
-      const count = data.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
-      
+      if (error) {
+        console.error('Erreur lors de la récupération des stats:', error);
+        return;
+      }
+
       const value = data.reduce((sum, item) => {
-        // Récupérer le dernier prix de l'historique
         const priceHistories = item.card_printing?.price_histories || [];
-        let latestPrice = 0;
-        
-        if (priceHistories.length > 0) {
-          const sortedPrices = priceHistories.sort((a, b) => 
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          latestPrice = parseFloat(sortedPrices[0].price) || 0;
-        }
+        const latestPrice = priceHistories
+          .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
 
-        console.log(`Prix pour carte ${item.card_printing.id}:`, {
-          priceHistories: item.card_printing?.price_histories,
-          latestPrice,
-          quantity: item.quantity
-        });
-
-        return sum + (latestPrice * (parseInt(item.quantity) || 0));
+        return sum + (latestPrice * (item.quantity || 0));
       }, 0);
 
-      console.log(`📊 Stats détaillées pour collection ${collectionId}:`, {
-        count,
-        value: value.toFixed(2),
-        rawData: data
-      });
-
-      setCollectionStats(prev => ({ 
-        ...prev, 
-        [collectionId]: { 
-          count, 
-          value: parseFloat(value.toFixed(2)) 
-        } 
+      setCollectionStats((prev) => ({
+        ...prev,
+        [collectionId]: {
+          count: data.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          value: parseFloat(value.toFixed(2)),
+        },
       }));
-    } else {
-      console.error('❌ Erreur stats:', error);
+    } catch (error) {
+      console.error('Erreur lors du calcul des stats:', error);
     }
   };
 
@@ -179,271 +233,10 @@ export default function useCollectionData(user) {
     }
   };
 
-  const updatePricesForCards = async (cards) => {
-    try {
-      for (const card of cards) {
-        if (!card.set_code || !card.collector_number) {
-          console.warn(`⛔ Skipping price update: missing set_code or collector_number for card`, card);
-          continue;
-        }
-        // Récupérer les données Lorcast
-        const response = await fetch(`https://api.lorcast.com/v0/cards/${card.set_code}/${card.collector_number}`);
-        if (!response.ok) {
-          console.warn(`❌ Lorcast API returned ${response.status} for card`, card);
-          continue;
-        }
-        const lorcastData = await response.json();
-        const normalPrice = parseFloat(lorcastData.prices?.usd || 0);
-        const foilPrice = parseFloat(lorcastData.prices?.usd_foil || 0);
-        const now = new Date().toISOString();
-        // Historique normal
-        if (normalPrice > 0) {
-          console.log('Tentative d\'insertion price_history (normal)', {
-            card_printing_id: card.id,
-            price: normalPrice,
-            date: now,
-            currency: 'USD',
-            is_foil: false,
-            source: 'Lorcast'
-          });
-          const { error: insertError } = await supabase.from('price_history').insert({
-            card_printing_id: card.id,
-            price: normalPrice,
-            date: now,
-            currency: 'USD',
-            is_foil: false,
-            source: 'Lorcast'
-          });
-          if (insertError) {
-            console.error('❌ Erreur lors de l\'insertion du prix normal dans price_history:', insertError, card);
-          } else {
-            console.log('✅ Insertion price_history (normal) OK pour', card.name, card.id);
-          }
-        }
-        // Historique foil
-        if (foilPrice > 0) {
-          console.log('Tentative d\'insertion price_history (foil)', {
-            card_printing_id: card.id,
-            price: foilPrice,
-            date: now,
-            currency: 'USD',
-            is_foil: true,
-            source: 'Lorcast'
-          });
-          const { error: insertError } = await supabase.from('price_history').insert({
-            card_printing_id: card.id,
-            price: foilPrice,
-            date: now,
-            currency: 'USD',
-            is_foil: true,
-            source: 'Lorcast'
-          });
-          if (insertError) {
-            console.error('❌ Erreur lors de l\'insertion du prix foil dans price_history:', insertError, card);
-          } else {
-            console.log('✅ Insertion price_history (foil) OK pour', card.name, card.id);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Erreur mise à jour prix:', error);
-    }
-  };
-
-  const fetchCardsForCollection = async (collectionId) => {
-    if (!collectionId) {
-      console.error('ID de collection manquant');
-      return;
-    }
-
-    try {
-      const selectedCol = collections.find(c => c.id === collectionId);
-      if (!selectedCol) {
-        throw new Error('Collection non trouvée');
-      }
-
-      const { data, error } = await supabase
-        .from('user_collections')
-        .select(`
-          quantity,
-          is_foil,
-          card_printing:card_printing_id (
-            id,
-            collector_number,
-            set_code,
-            image_url,
-            version,
-            price_histories:price_history(
-              price,
-              date,
-              is_foil
-            ),
-            card:card_id (
-              id,
-              name,
-              rarity,
-              type,
-              description,
-              version,
-              image_url
-            ),
-            set:set_id (
-              id,
-              name,
-              code
-            )
-          )
-        `)
-        .eq('collection_id', selectedCol.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      console.log('📦 Raw data from DB:', data);
-
-      if (!data || data.length === 0) {
-        console.log('⚠️ Aucune carte trouvée pour cette collection');
-        setCards([]);
-        return;
-      }
-
-      console.log('🟢 Données brutes Supabase:', data);
-
-      const formattedCards = data
-        .filter(item => item.card_printing)
-        .map(item => {
-          console.log('🔎 DEBUG card_printing complet:', item.card_printing);
-          if (!item.card_printing.card || !item.card_printing.set) {
-            console.warn('❗ Carte incomplète dans user_collections:', item);
-            return null;
-          }
-          const priceHistories = item.card_printing.price_histories || [];
-          // Correction : on prend le dernier prix correspondant au type foil ou non
-          let latestPrice = 0;
-          if (item.is_foil) {
-            latestPrice = priceHistories
-              .filter(h => h.is_foil === true)
-              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
-          } else {
-            latestPrice = priceHistories
-              .filter(h => !h.is_foil || h.is_foil === false)
-              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
-          }
-          // On peut aussi garder le dernier prix foil pour affichage secondaire
-          const latestFoilPrice = priceHistories
-            .filter(h => h.is_foil === true)
-            .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || undefined;
-
-          // Correction : fallback explicite sur le code du set parent
-          const setCode = (item.card_printing.set && item.card_printing.set.code) || item.card_printing.set_code || null;
-          const collectorNumber = item.card_printing.collector_number || null;
-
-          const cardObj = {
-            id: item.card_printing.id,
-            name: item.card_printing.card.name,
-            rarity: item.card_printing.card.rarity,
-            type: item.card_printing.card.type,
-            version: item.card_printing.version || item.card_printing.card.version || item.version || null,
-            set_name: item.card_printing.set.name,
-            set_code: setCode,
-            collector_number: collectorNumber,
-            image: item.card_printing.image_url || item.card_printing.card.image_url,
-            quantity: item.quantity,
-            isFoil: item.is_foil,
-            price: latestPrice,
-            foil_price: latestFoilPrice
-          };
-          console.log('🟢 Carte formatée:', cardObj, 'set_code:', setCode, 'collector_number:', collectorNumber);
-          return cardObj;
-        })
-        .filter(Boolean);
-
-      console.log('✅ Cartes formatées finales:', formattedCards);
-
-      console.log('🟢 Appel updatePricesForCards avec', formattedCards.length, 'cartes', formattedCards.map(c => c.name));
-      // Mettre à jour les prix
-      await updatePricesForCards(formattedCards);
-      // Recharger les données avec les nouveaux prix (pour affichage correct dès la 1ère fois)
-      const refreshed = await supabase
-        .from('user_collections')
-        .select(`
-          quantity,
-          is_foil,
-          card_printing:card_printing_id (
-            id,
-            collector_number,
-            set_code,
-            image_url,
-            version,
-            price_histories:price_history(
-              price,
-              date,
-              is_foil
-            ),
-            card:card_id (
-              id,
-              name,
-              rarity,
-              type,
-              description,
-              version,
-              image_url
-            ),
-            set:set_id (
-              id,
-              name,
-              code
-            )
-          )
-        `)
-        .eq('collection_id', selectedCol.id)
-        .eq('user_id', user.id);
-      if (refreshed.error) throw refreshed.error;
-      const refreshedCards = refreshed.data
-        .filter(item => item.card_printing)
-        .map(item => {
-          const priceHistories = item.card_printing.price_histories || [];
-          let latestPrice = 0;
-          if (item.is_foil) {
-            latestPrice = priceHistories
-              .filter(h => h.is_foil === true)
-              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
-          } else {
-            latestPrice = priceHistories
-              .filter(h => !h.is_foil || h.is_foil === false)
-              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
-          }
-          const latestFoilPrice = priceHistories
-            .filter(h => h.is_foil === true)
-            .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || undefined;
-          const setCode = (item.card_printing.set && item.card_printing.set.code) || item.card_printing.set_code || null;
-          const collectorNumber = item.card_printing.collector_number || null;
-          return {
-            id: item.card_printing.id,
-            name: item.card_printing.card.name,
-            rarity: item.card_printing.card.rarity,
-            type: item.card_printing.card.type,
-            version: item.card_printing.version || item.card_printing.card.version || item.version || null,
-            set_name: item.card_printing.set.name,
-            set_code: setCode,
-            collector_number: collectorNumber,
-            image: item.card_printing.image_url || item.card_printing.card.image_url,
-            quantity: item.quantity,
-            isFoil: item.is_foil,
-            price: latestPrice,
-            foil_price: latestFoilPrice
-          };
-        })
-        .filter(Boolean);
-      setCards(refreshedCards);
-
-      // Recharger les données avec les nouveaux prix
-      await fetchStats(collectionId);
-
-    } catch (error) {
-      console.error('❌ Erreur lors de la récupération des cartes:', error);
-      setCards([]);
-    }
+  const refreshPricesForCollection = async (collectionId) => {
+    console.log(`🔄 Rafraîchissement des prix pour la collection ${collectionId}`);
+    await fetchCardsForCollection(collectionId);
+    console.log(`✅ Rafraîchissement terminé pour la collection ${collectionId}`);
   };
 
   return {

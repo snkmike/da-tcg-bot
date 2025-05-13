@@ -50,15 +50,23 @@ export default function CollectionCardItem({
   };
 
   const handleDelete = async () => {
+    console.log('Données de la carte:', card);
     if (!window.confirm('Voulez-vous vraiment supprimer cette carte de la collection ?')) return;
-    
+
+    if (!card.card_printing_id) {
+      console.error('Erreur: card_printing_id est undefined');
+      showToast("❌ Erreur: ID de l'impression de la carte manquant");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('user_collections')
         .delete()
         .match({
           collection_id: collectionId,
-          card_printing_id: card.id
+          card_printing_id: card.card_printing_id, // Utiliser l'ID du printing
+          is_foil: isFoil // Ajouter la distinction foil/non-foil
         });
 
       if (error) throw error;

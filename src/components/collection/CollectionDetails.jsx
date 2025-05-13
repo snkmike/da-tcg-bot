@@ -17,33 +17,11 @@ export default function CollectionDetails({
   const [filterKey] = useState(0);
   const [sortKey, setSortKey] = useState('alpha');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [lastUpdateTime, setLastUpdateTime] = useState(null);
 
   useEffect(() => {
-    // Vérifier si on doit mettre à jour les prix (toutes les heures)
-    const shouldUpdate = () => {
-      if (!lastUpdateTime) return true;
-      const hoursSinceLastUpdate = (Date.now() - lastUpdateTime) / (1000 * 60 * 60);
-      return hoursSinceLastUpdate >= 1;
-    };
-
-    if (fetchCardsForCollection && collection?.id && shouldUpdate()) {
-      console.log('🔄 Mise à jour des prix programmée');
-      fetchCardsForCollection(collection.id);
-      setLastUpdateTime(Date.now());
-    }
-
-    // Programmer la prochaine mise à jour
-    const nextUpdate = setTimeout(() => {
-      if (shouldUpdate()) {
-        console.log('⏰ Mise à jour automatique des prix');
-        fetchCardsForCollection(collection.id);
-        setLastUpdateTime(Date.now());
-      }
-    }, 3600000); // 1 heure
-
-    return () => clearTimeout(nextUpdate);
-  }, [collection?.id, fetchCardsForCollection, lastUpdateTime]);
+    // Suppression de l'appel redondant à fetchCardsForCollection
+    console.log('🔄 Chargement initial des cartes pour la collection');
+  }, []); // Removed dependencies to prevent redundant calls
 
   const filteredCards = cards.filter(card => {
     if (filterSet !== 'all' && card.set_name !== filterSet) return false;
@@ -92,14 +70,23 @@ export default function CollectionDetails({
         setSortKey={setSortKey}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
-      />      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
         {sortedCards.map(card => (
           <CollectionCardItem
             key={`${card.name}_${card.set_name}_${card.collector_number}_${card.isFoil}`}
             card={card}
             onUpdate={() => fetchCardsForCollection(collection.id)}
             collectionId={collection.id}
-          />
+          >
+            <div className="text-sm mt-2">
+              <p className="text-green-600 font-bold">Prix normal: {card.price} €</p>
+              {card.foil_price > 0 && (
+                <p className="text-purple-600 font-bold">Prix foil: {card.foil_price} €</p>
+              )}
+            </div>
+          </CollectionCardItem>
         ))}
       </div>
     </div>
