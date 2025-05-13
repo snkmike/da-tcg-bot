@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.card-foil {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.card-foil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('https://static.vecteezy.com/system/resources/previews/002/207/827/non_2x/abstract-neon-background-free-vector.jpg');
+  background-size: 120% 120%;
+  background-position: center;
+  mix-blend-mode: color-dodge;
+  opacity: 0.45;
+  z-index: 1;
+  animation: foil-shine 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.card-foil img {
+  position: relative;
+  z-index: 0;
+}
+
+@keyframes foil-shine {
+  0% {
+    background-position: 45% 45%;
+  }
+  50% {
+    background-position: 55% 55%;
+  }
+  100% {
+    background-position: 45% 45%;
+  }
+}

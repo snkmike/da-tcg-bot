@@ -77,10 +77,9 @@ export default function CollectionCardItem({
       showToast("❌ Erreur lors de la suppression");
     }
   };
-  // Contenu spécifique à la collection
   const editingContent = (
-    <div className="mt-2 space-y-2">
-      <div className="flex items-center gap-2">
+    <div className="mt-3 px-4 pb-4 space-y-3">
+      <div className="flex items-center gap-3">
         <div className="flex items-center flex-1">
           <input
             type="number"
@@ -92,7 +91,7 @@ export default function CollectionCardItem({
                 setQuantity(newValue);
               }
             }}
-            className="w-20 text-center border rounded p-1 text-sm"
+            className="w-24 text-center bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
             onBlur={(e) => {
               const value = parseInt(e.target.value, 10);
               if (!value || value < 1) {

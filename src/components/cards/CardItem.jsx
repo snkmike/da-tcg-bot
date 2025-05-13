@@ -14,69 +14,52 @@ export default function CardItem({
   topRightBadge
 }) {  
   return (
-    <div
+    <div className={`${className} bg-white rounded-xl overflow-hidden h-full flex flex-col`}
       onClick={onClick}
-      className={`relative bg-white border p-3 rounded-lg shadow-sm hover:shadow-md flex flex-col ${className}`}
     >
-      {/* Badges personnalisables en haut à gauche et à droite */}
-      {topLeftBadge && (
-        <div className="absolute top-2 left-2">
-          {topLeftBadge}
-        </div>
-      )}
-      {topRightBadge && (
-        <div className="absolute top-2 right-2">
-          {topRightBadge}
-        </div>
-      )}
-
-      {/* Informations statiques de la carte */}
-      <div className="mb-2">
-        <img src={card.image} alt={card.name} className="w-full h-auto object-contain mb-2 rounded" />
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{card.name}</span>
+      <div className="relative p-3 flex-grow">
+        {topLeftBadge}
+        {topRightBadge}
+        {card.image && (
+          <div className={`relative h-full ${card.isFoil ? 'card-foil' : ''}`}>
+            <img
+              src={card.image}
+              alt={card.name}
+              className="w-full h-full object-contain rounded-lg"
+            />
+          </div>
+        )}
+      </div>
+      <div className="px-4 pb-4">
+        <div className="flex items-baseline gap-2 mb-2 w-full">
+          <h4 className="font-bold text-gray-900 text-lg leading-snug truncate min-w-0 shrink">{card.name}</h4>
           {card.version && (
-            <span className="text-xs font-normal italic text-gray-600 whitespace-nowrap truncate">• {card.version}</span>
+            <span className="text-sm font-medium text-gray-500 truncate flex-1 min-w-0">
+              {card.version}
+            </span>
           )}
         </div>
-        <p className="text-xs text-gray-600 truncate">Set: {card.set_name}</p>
-        <p className="text-xs text-gray-600">#{card.collector_number} - {card.rarity}</p>
-        <div className="text-sm mt-1">
-          {/* Affichage combiné pour la recherche : toujours prix normal + foil si dispo */}
-          {typeof card.isFoil === 'undefined' ? (
-            <>
-              {card.price !== undefined && (
-                <span className="text-green-600 font-bold">{card.price} €</span>
-              )}
-              {card.foil_price !== undefined && (
-                <span className="text-purple-500 font-bold ml-2">Foil: {card.foil_price} €</span>
-              )}
-              {card.price === undefined && card.foil_price === undefined && (
-                <span className="text-gray-400">-</span>
-              )}
-            </>
+        <div className="space-y-1">
+          <p className="text-sm text-gray-600 font-medium">{card.set_name}</p>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="bg-gray-100 px-2 py-1 rounded-md">#{card.collector_number}</span>
+            <span className="bg-gray-100 px-2 py-1 rounded-md">{card.rarity}</span>
+          </div>
+        </div>
+        
+        {/* Prix avec effet glassmorphism */}
+        <div className="mt-3">
+          {card.isFoil ? (
+            <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg">
+              <span className="text-purple-700 font-bold">{card.price} €</span>
+            </div>
           ) : (
-            // Affichage collection : prix selon type
-            card.isFoil && card.foil_price !== undefined ? (
-              <span className="text-purple-500 font-bold">Foil: {card.foil_price} €</span>
-            ) : (!card.isFoil && card.price !== undefined ? (
-              <span className="text-green-600 font-bold">{card.price} €</span>
-            ) : (
-              card.foil_price !== undefined ? (
-                <span className="text-purple-500 font-bold">Foil: {card.foil_price} €</span>
-              ) : (
-                card.price !== undefined ? (
-                  <span className="text-green-600 font-bold">{card.price} €</span>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )
-              )
-            ))
+            <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg">
+              <span className="text-green-700 font-bold">{card.price} €</span>
+            </div>
           )}
         </div>
       </div>
-
-      {/* Contenu supplémentaire injecté par les composants enfants */}
       {children}
     </div>
   );

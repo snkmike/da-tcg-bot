@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAppState } from './useAppState';
 import { renderContent } from './routes';
@@ -22,26 +21,234 @@ export default function App() {
   const [filterGame, setFilterGame] = useState('all');
   const [availableSets, setAvailableSets] = useState([]);
 
-  const handleAddCardsToPortfolio = async (cards, collectionName) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-  
-    if (!userId || !collectionName || !cards || cards.length === 0) return;
-  
-    const enrichedCards = cards.map(card => {
-      const { id, ...rest } = card;
-      return {
-        ...rest,
-        user_id: userId,
-        collection: collectionName,
-      };
-    });
-  
-    const { error } = await supabase.from('cards').insert(enrichedCards);
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-    } else {
-      //console.log(`✅ Ajouté à la collection '${collectionName}':`, enrichedCards);
+  const handleAddCardsToPortfolio = async (cards, collectionId) => {
+    console.log('🎯 Début handleAddCardsToPortfolio:', { cards, collectionId });
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+
+      if (!userId || !collectionId || !cards || cards.length === 0) {
+        console.error('❌ Données manquantes:', { userId, collectionId, cardsLength: cards?.length });
+        return;
+      }
+
+      console.log('📦 Cards to process:', cards);
+      
+      // Update foil status for all cards
+      cards.forEach(card => {
+        if (card.id) {
+          const isFoil = card.id.endsWith('_foil');
+          card.isFoil = isFoil;
+        }
+      });
+
+      // Now prepare the collection entries
+      const enrichedCards = await Promise.all(cards.map(async card => {
+        // Clean the UUID as we did before
+        const isFoil = card.id.endsWith('_foil');
+        const cardUuid = card.id.replace('crd_', '').replace('_foil', '');
+        console.log('🔍 Looking for card printing:', { cardUuid, set_code: card.set_code, isFoil });
+        
+        // Get the card printing ID
+        const { data: cardPrintings, error: printingError } = await supabase
+          .from('card_printings')
+          .select('id')
+          .eq('card_id', cardUuid)
+          .eq('set_code', card.set_code);
+
+        if (printingError) {
+          console.error('❌ Error finding card printing:', printingError);
+          return null;
+        }
+
+        let cardPrinting = cardPrintings?.[0];
+
+        // If no card printing exists, create it
+        if (!cardPrinting) {
+          console.log('➕ Creating missing card printing:', { cardUuid, set_code: card.set_code });
+          
+          // Create card if needed
+          // Format the UUID with hyphens if needed
+          const formattedUuid = cardUuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+          console.log('🔍 Looking for existing card:', formattedUuid);
+          
+          const { data: existingCard } = await supabase
+            .from('cards')
+            .select('id')
+            .eq('id', formattedUuid)
+            .single();
+
+          if (!existingCard) {
+            console.log('➕ Creating new card:', { cardUuid, name: card.name, game: 'Lorcana' });
+            const { error: cardError } = await supabase
+              .from('cards')
+              .insert({
+                id: formattedUuid,
+                name: card.name,
+                rarity: card.rarity,
+                type: card.type,
+                description: card.oracle_text || card.description,
+                version: card.version,
+                game: 'Lorcana'
+              });
+
+            if (cardError) {
+              console.error('❌ Error creating card:', cardError);
+              console.error('Failed card data:', {
+                id: cardUuid,
+                name: card.name,
+                rarity: card.rarity,
+                type: card.type,
+                description: card.oracle_text || card.description,
+                version: card.version,
+                game: 'Lorcana'
+              });
+              return null;
+            }
+          }
+
+          // Get or create set
+          const { data: existingSet } = await supabase
+            .from('sets')
+            .select('id')
+            .eq('code', card.set_code)
+            .single();
+
+          let setId;
+          if (!existingSet) {
+            const { data: newSet, error: setError } = await supabase
+              .from('sets')
+              .insert({
+                name: card.set_name,
+                code: card.set_code,
+                game: 'Lorcana'
+              })
+              .select('id')
+              .single();
+
+            if (setError) {
+              console.error('❌ Error creating set:', setError);
+              return null;
+            }
+            setId = newSet.id;
+          } else {
+            setId = existingSet.id;
+          }
+
+          // Create the card printing
+          const newCardPrintingId = crypto.randomUUID();
+          const { data: newPrinting, error: insertError } = await supabase
+            .from('card_printings')
+            .insert({
+              id: newCardPrintingId,
+              collector_number: card.collector_number,
+              set_code: card.set_code,
+              image_url: card.image,
+              card_id: formattedUuid,
+              set_id: setId
+            })
+            .select('id')
+            .single();
+
+          if (insertError) {
+            console.error('❌ Error creating card printing:', insertError);
+            return null;
+          }
+
+          cardPrinting = newPrinting;
+        }
+          
+        // Handle the case where the card printing wasn't found but also wasn't created
+        if (!cardPrinting) {
+          console.error('❌ Failed to get or create card printing:', card);
+          return null;
+        }
+        
+        console.log('📦 Traitement de la carte:', card);
+        return {
+          user_id: userId,
+          collection_id: collectionId,
+          card_printing_id: cardPrinting.id,
+          quantity: card.quantity || 1,
+          is_foil: card.isFoil || false
+        };
+      }));
+
+      const validCards = enrichedCards.filter(card => card !== null);
+      
+      if (validCards.length === 0) {
+        console.error('❌ Aucune carte valide à ajouter');
+        return;
+      }
+
+      console.log('📥 Cartes à insérer:', validCards);
+
+      // Insérer les cartes dans la collection
+      const { error: insertError } = await supabase
+        .from('user_collections')
+        .insert(validCards);
+
+      if (insertError) {
+        console.error('❌ Erreur Supabase:', insertError);
+        return;
+      }
+
+      // Ajouter les prix dans price_history
+      const priceEntries = [];
+      
+      for (const card of cards) {
+        // Clean the UUID as we did before
+        const cardUuid = card.id.replace('crd_', '').replace('_foil', '');
+        
+        // Get the card printing ID for this card
+        const { data: cardPrinting } = await supabase
+          .from('card_printings')
+          .select('id')
+          .eq('card_id', cardUuid)
+          .eq('set_code', card.set_code)
+          .single();
+
+        if (!cardPrinting) continue;
+
+        const date = new Date().toISOString();
+
+        if (card.price) {
+          priceEntries.push({
+            card_printing_id: cardPrinting.id,
+            price: parseFloat(card.price),
+            date,
+            currency: 'USD',
+            is_foil: false
+          });
+        }
+        
+        if (card.foil_price) {
+          priceEntries.push({
+            card_printing_id: cardPrinting.id,
+            price: parseFloat(card.foil_price),
+            date,
+            currency: 'USD',
+            is_foil: true
+          });
+        }
+      }
+
+      if (priceEntries.length > 0) {
+        const { error: priceError } = await supabase
+          .from('price_history')
+          .insert(priceEntries);
+
+        if (priceError) {
+          console.error('❌ Erreur lors de l\'ajout des prix:', priceError);
+        } else {
+          console.log('✅ Prix ajoutés dans price_history');
+        }
+      }
+
+      console.log('✅ Cartes ajoutées avec succès à la collection');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'ajout des cartes:', error);
     }
   };
 

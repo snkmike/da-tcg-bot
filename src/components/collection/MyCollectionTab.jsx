@@ -15,46 +15,11 @@ export default function MyCollectionTab({ user }) {
     fetchCollections,
     fetchCardsForCollection,
     showToast,
-    toast
+    toast,
+    loadingValues
   } = useCollectionData(user);
 
-  useEffect(() => {
-    window.handleAddCardsToPortfolio = async (cards, collectionName) => {
-      if (!user || !collectionName || !cards || cards.length === 0) return;
-
-      const enrichedCards = cards.map(card => {
-        const { id, ...rest } = card;
-        return {
-          ...rest,
-          user_id: user.id,
-          collection: collectionName
-        };
-      });
-
-      const { error } = await supabase.from('cards').insert(enrichedCards);
-      if (!error) {
-        // Ajouter les prix des cartes dans la table price_history
-        const priceEntries = enrichedCards.map(card => ({
-          card_printing_id: card.card_printing_id,
-          price: Math.random() * 100, // TODO: Remplacer par une API réelle pour récupérer le prix
-          date: new Date().toISOString(),
-          currency: 'EUR',
-          is_foil: card.is_foil
-        }));
-
-        const { error: priceError } = await supabase.from('price_history').insert(priceEntries);
-        if (priceError) {
-          console.error('❌ Erreur lors de l\'ajout des prix dans price_history:', priceError);
-        } else {
-          console.log('✅ Prix ajoutés dans price_history');
-        }
-
-        showToast('✅ Carte ajoutée à la collection avec prix');
-      } else {
-        console.error('❌ Supabase insert error:', error);
-      }
-    };
-  }, [user]);
+  // La fonction handleAddCardsToPortfolio est maintenant gérée dans App.jsx
 
   return (
     <div className="p-4">
@@ -68,6 +33,7 @@ export default function MyCollectionTab({ user }) {
         <CollectionList
           collections={collections}
           collectionStats={collectionStats}
+          loadingValues={loadingValues}
           onSelectCollection={async (col) => {
             console.log('Collection sélectionnée:', col); // Debug
             setSelectedCollection(col);

@@ -9,7 +9,8 @@ export default function CollectionList({
   onRefresh,
   onDeleteSuccess,
   showToast,
-  user
+  user,
+  loadingValues
 }) {
   return (
     <div className="space-y-4">
@@ -63,17 +64,26 @@ export default function CollectionList({
 
               <div className="flex items-center gap-4">
                 <p className="text-md text-gray-500">{stats.count || 0} cartes</p>
-                <p className="text-md text-green-700 font-bold">💰 {(stats.value || 0).toFixed(2)} €</p>
+                {loadingValues[col.id] ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>
+                    <span className="text-gray-500">Calcul...</span>
+                  </div>
+                ) : (
+                  <p className="text-md text-green-700 font-bold">
+                    💰 {(stats.value || 0).toFixed(2)}€
+                  </p>
+                )}
 
                 <button
-                  className="text-red-500 hover:text-red-700 text-sm"
+                  className="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
                   onClick={async (e) => {
                     e.stopPropagation();
                     if (!(window.confirm(`Supprimer la collection "${col.name}" ?`))) return;
                     const { error } = await supabase
                       .from('collections')
                       .delete()
-                      .eq('name', col.name)
+                      .eq('id', col.id)
                       .eq('user_id', user.id);
                     if (!error) {
                       onDeleteSuccess();
@@ -81,7 +91,7 @@ export default function CollectionList({
                     }
                   }}
                 >
-                  ✕
+                  Supprimer
                 </button>
               </div>
             </div>

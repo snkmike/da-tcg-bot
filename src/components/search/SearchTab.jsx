@@ -25,8 +25,8 @@ export default function SearchTab({
   availableSets = [],
   selectedRarities,
   setSelectedRarities,
-  filterKey
-  
+  filterKey,
+  handleAddCardsToPortfolio
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [localSearchResults, setLocalSearchResults] = useState([]);
@@ -34,31 +34,14 @@ export default function SearchTab({
   const [isNumberSearchOpen, setIsNumberSearchOpen] = useState(false);
   const [sortKey, setSortKey] = useState('alpha');
   const [sortOrder, setSortOrder] = useState('asc');
-  // Synchroniser les résultats externes avec les résultats locaux
+
   useEffect(() => {
     if (externalSearchResults?.length > 0) {
       setLocalSearchResults(externalSearchResults);
     }
   }, [externalSearchResults]);
 
-  const handleSearch = async (query) => {
-    console.log('📌 handleSearch appelée avec:', query);
-
-    if (typeof query === 'string') {
-      if (query.length < 3) return;
-      setIsLoading(true);
-      setSearchQuery(query);
-      setTimeout(() => setIsLoading(false), 500);
-    }
-  };
-
-  const formatDuplicateWarning = (duplicates) => {
-    return Object.entries(duplicates).map(([number, count]) => ({
-      number,
-      count,
-      text: `#${number} (${count} fois)`
-    }));
-  };
+  // On n'a plus besoin de la fonction formatDuplicateWarning car on formate directement les doublons plus bas
 
   const handleSearchByNumber = async (setId, number) => {
     console.log('🔢 Recherche par numéro déclenchée:', { setId, number });
@@ -69,17 +52,85 @@ export default function SearchTab({
       setSearchQuery('');
       window.lastSearchWasById = true;
 
-      const response = await fetchCardByNumber(setId, number);
+      // Traiter les numéros et séparer les foils
+      const processedNumbers = number.map(n => {
+        const num = n.trim();
+        return {
+          number: num.replace(/F$/i, ''), // Retire le F à la fin
+          isFoil: num.endsWith('F') || num.endsWith('f'),
+          original: num // Garder la valeur originale pour la détection des doublons
+        };
+      });
+
+      // Compter séparément les versions normales et foil
+      const duplicates = processedNumbers.reduce((acc, current) => {
+        // Ne pas utiliser current.number qui a déjà eu le F retiré
+        // Utiliser original qui conserve le F s'il était présent
+        acc[current.original] = (acc[current.original] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Ne garder que les vrais doublons et les trier
+      const realDuplicates = Object.entries(duplicates)
+        .filter(([_, count]) => count > 1)
+        // Trier d'abord par numéro, puis par F
+        .sort((a, b) => {
+          const numA = parseInt(a[0].replace(/F$/i, ''));
+          const numB = parseInt(b[0].replace(/F$/i, ''));
+          if (numA !== numB) return numA - numB;
+          // Si même numéro, mettre les non-foil en premier
+          return a[0].endsWith('F') ? 1 : -1;
+        })
+        .reduce((acc, [num, count]) => {
+          acc[num] = {
+            count: count,
+            text: `#${num} (${count} fois)`
+          };
+          return acc;
+        }, {});
+
+      // Passer les numéros originaux pour conserver les F
+      const response = await fetchCardByNumber(setId, processedNumbers.map(n => n.original));
       console.log('📥 Résultats fetchCardByNumber:', response);
 
-      if (response.cards && response.cards.length > 0) {
-        console.log('✅ Mise à jour des résultats de recherche par numéro:', response.cards[0]);
-        setLocalSearchResults(response.cards);
-        setExternalSearchResults(response.cards);
+      if (response.error) {
+        console.error('❌ Erreur de recherche:', response.error);
+        setLocalSearchResults([]);
+        setExternalSearchResults([]);
+      } else if (response.cards && response.cards.length > 0) {
+        // Créer une Map pour dédupliquer les cartes par numéro
+        const uniqueCards = new Map();
+        
+        // Pour chaque numéro recherché
+        processedNumbers.forEach(({ number, isFoil }) => {
+          const matchingCards = response.cards.filter(card => card.collector_number === number);
+          if (matchingCards.length > 0) {
+            const card = matchingCards[0];
+            const key = card.collector_number;
+            // Créer une clé unique qui inclut l'état foil
+            const uniqueKey = `${key}${isFoil ? 'F' : ''}`;
+            // Ajouter la carte avec sa version spécifique
+            uniqueCards.set(uniqueKey, {
+              ...card,
+              id: isFoil ? `${card.id}_foil` : card.id,
+              isFoil: isFoil,
+              price: isFoil ? card.prices?.usd_foil : card.prices?.usd || null
+            });
+          }
+        });
 
-        // Gérer les doublons s'il y en a
+        const filteredCards = Array.from(uniqueCards.values());
+        console.log('✅ Cartes filtrées:', filteredCards);
+        setLocalSearchResults(filteredCards);
+        setExternalSearchResults(filteredCards);
+
+        // Créer les alertes de doublons à partir des infos de response.duplicates
         if (Object.keys(response.duplicates).length > 0) {
-          setDuplicateWarnings(formatDuplicateWarning(response.duplicates));
+          const warnings = Object.entries(response.duplicates).map(([number, info]) => ({
+            number,
+            ...info
+          }));
+          setDuplicateWarnings(warnings);
         }
       } else {
         console.log('❌ Aucun résultat trouvé pour la recherche par numéro');
@@ -95,6 +146,15 @@ export default function SearchTab({
     }
   };
 
+  const handleSearch = async (query) => {
+    if (typeof query === 'string') {
+      if (query.length < 3) return;
+      setIsLoading(true);
+      setSearchQuery(query);
+      setTimeout(() => setIsLoading(false), 500);
+    }
+  };
+
   useEffect(() => {
     if (window.lastSearchWasById) {
       console.log('🔄 Skip de la recherche car dernière recherche par ID');
@@ -102,8 +162,7 @@ export default function SearchTab({
     }
 
     if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') {
-      console.log('⏭️ Recherche par nom ignorée:', 
-        { query: searchQuery, length: searchQuery?.length, game: filterGame });
+      console.log('⏭️ Recherche par nom ignorée:', { query: searchQuery, length: searchQuery?.length, game: filterGame });
       return;
     }
 
@@ -125,21 +184,28 @@ export default function SearchTab({
   }, [searchQuery, filterSet, selectedRarities, showSetResults, filterGame]);
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Recherche de carte</h2>
-
+    <div className="space-y-6">
       <SearchBox
-        localQuery={searchQuery}
-        setLocalQuery={setSearchQuery}
+        searchQuery={searchQuery}
+        setSearchQuery={handleSearch}
         filterGame={filterGame}
         setFilterGame={setFilterGame}
-        onSearch={handleSearch}
-        onSearchByNumber={handleSearchByNumber}
         isLoading={isLoading}
         isNumberSearchOpen={isNumberSearchOpen}
-        setIsNumberSearchOpen={setIsNumberSearchOpen}
+        setIsNumberSearchOpen={(isOpen) => {
+          setIsNumberSearchOpen(isOpen);
+          if (!isOpen) {
+            // Reset les doublons quand on retourne à la recherche par nom
+            setDuplicateWarnings(null);
+            setLocalSearchResults([]);
+            setExternalSearchResults([]);
+            window.lastSearchWasById = false;
+          }
+        }}
+        handleSearchByNumber={handleSearchByNumber}
       />
 
+      {/* Filtres - masqués en mode recherche par numéro */}
       <SearchFilters
         filterSet={filterSet}
         setFilterSet={setFilterSet}
@@ -151,62 +217,34 @@ export default function SearchTab({
         selectedRarities={selectedRarities}
         setSelectedRarities={setSelectedRarities}
         filterKey={filterKey}
-        isDisabled={isNumberSearchOpen}
         sortKey={sortKey}
         setSortKey={setSortKey}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
+        isDisabled={isNumberSearchOpen}
       />
 
-      {duplicateWarnings && duplicateWarnings.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Numéros en double détectés</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <span className="font-medium">Cartes répétées :</span>
-                <div className="mt-1 flex flex-wrap gap-2">
-                  {duplicateWarnings.map((warning) => (
-                    <span 
-                      key={warning.number}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-                    >
-                      {warning.text}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        {console.log('🎯 Rendu des résultats:', {
-          hasLorcanaComponent: !!LorcanaComponent,
-          localSearchResults,
-          resultCount: localSearchResults?.length,
-          firstResult: localSearchResults?.[0]
-        })}
-        {LorcanaComponent ? (
+      {/* Zone de résultats */}
+      <div className="bg-white rounded-lg shadow-sm">
+        {filterGame === 'Lorcana' ? (
           <LorcanaComponent
             results={localSearchResults}
             setSelectedCard={setSelectedCard}
             groupBySet={showSetResults}
-            handleAddCardsToPortfolio={() => {}}
+            handleAddCardsToPortfolio={handleAddCardsToPortfolio}
             sortKey={sortKey}
             sortOrder={sortOrder}
+            duplicateWarnings={duplicateWarnings}
+          />
+        ) : showSetResults ? (
+          <SetResult
+            searchResults={localSearchResults}
+            setSelectedCard={setSelectedCard}
           />
         ) : (
           <CardResult
             searchResults={localSearchResults}
             setSelectedCard={setSelectedCard}
-            groupBySet={showSetResults}
           />
         )}
       </div>

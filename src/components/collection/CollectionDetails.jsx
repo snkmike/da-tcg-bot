@@ -19,9 +19,9 @@ export default function CollectionDetails({
   const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => {
-    // Suppression de l'appel redondant à fetchCardsForCollection
-    console.log('🔄 Chargement initial des cartes pour la collection');
-  }, []); // Removed dependencies to prevent redundant calls
+    console.log('🔄 CollectionDetails - Collection:', collection);
+    console.log('🃏 CollectionDetails - Cards:', cards);
+  }, [collection, cards]);
 
   const filteredCards = cards.filter(card => {
     if (filterSet !== 'all' && card.set_name !== filterSet) return false;

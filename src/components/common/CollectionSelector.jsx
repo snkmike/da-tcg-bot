@@ -1,39 +1,54 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Select from 'react-select';
 
 export default function CollectionSelector({ collections, selectedCollection, setSelectedCollection, customStyles }) {
-  const [allSelected, setAllSelected] = useState(false);
   const options = collections.map(col => ({ value: col.id, label: col.name }));
 
-  const handleToggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedCollection(null); // Désélectionner tout
-    } else {
-      collections.forEach(col => {
-        setSelectedCollection(prev => ({ ...prev, id: col.id, name: col.name })); // Simuler un clic manuel
-      });
+  const handleCollectionChange = (option) => {
+    if (!option) {
+      setSelectedCollection(null);
+      return;
     }
-    setAllSelected(!allSelected);
+    setSelectedCollection({ id: option.value, name: option.label });
+  };
+
+  const defaultStyles = {
+    control: (base) => ({
+      ...base,
+      height: '42px',
+      backgroundColor: 'white',
+      borderColor: '#E5E7EB',
+      '&:hover': {
+        borderColor: '#A5B4FC'
+      }
+    }),
+    option: (base, { isFocused, isSelected }) => ({
+      ...base,
+      backgroundColor: isSelected 
+        ? '#4F46E5' 
+        : isFocused 
+          ? '#EEF2FF' 
+          : 'white',
+      color: isSelected ? 'white' : '#374151'
+    }),
+    ...customStyles
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={handleToggleSelectAll}
-        className={`px-3 py-1 rounded transition-colors ${allSelected ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
-      >
-        {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
-      </button>
-      <div className="flex-1 min-w-[200px]">
-        <label className="text-sm font-medium block mb-1">Choisir une collection :</label>
-        <Select
-          options={options}
-          value={options.find(opt => opt.value === selectedCollection?.id)}
-          onChange={(option) => setSelectedCollection({ id: option.value, name: option.label })}
-          styles={customStyles}
-          placeholder="-- Sélectionnez --"
-        />
+    <div>
+      <div className="text-sm  font-medium text-gray-700 mb-1.5">
+        Ajouter pour la collection :
       </div>
+      <Select
+        options={options}
+        value={options.find(opt => opt.value === selectedCollection?.id)}
+        onChange={handleCollectionChange}
+        styles={defaultStyles}
+        placeholder="Sélectionner une collection"
+        noOptionsMessage={() => "Aucune collection disponible"}
+        isClearable
+        className="min-w-[250px]"
+      />
     </div>
   );
 }

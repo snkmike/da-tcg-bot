@@ -8,8 +8,11 @@ export default function useCollectionData(user) {
   const [cards, setCards] = useState([]);
   const [toast, setToast] = useState('');
   const [collectionStats, setCollectionStats] = useState({});
+  const [loadingValues, setLoadingValues] = useState({});
 
   const fetchCardsForCollection = async (collectionId) => {
+    console.log('🎯 fetchCardsForCollection appelé avec ID:', collectionId);
+    
     if (!collectionId) {
       console.error('ID de collection manquant');
       return;
@@ -17,10 +20,32 @@ export default function useCollectionData(user) {
 
     try {
       const selectedCol = collections.find(c => c.id === collectionId);
+      console.log('📦 Collection trouvée:', selectedCol);
+      
       if (!selectedCol) {
         throw new Error('Collection non trouvée');
       }
 
+      console.log('🔍 Recherche des cartes avec:', { 
+        collection_id: selectedCol.id, 
+        user_id: user.id 
+      });
+
+      // D'abord, vérifions les entrées dans user_collections
+      const { data: userCollections, error: ucError } = await supabase
+        .from('user_collections')
+        .select('*')
+        .eq('collection_id', selectedCol.id)
+        .eq('user_id', user.id);
+
+      console.log('📦 Entrées dans user_collections:', userCollections);
+      
+      if (ucError) {
+        console.error('❌ Erreur lors de la requête user_collections:', ucError);
+        throw ucError;
+      }
+
+      // Ensuite, faisons la requête complète
       const { data, error } = await supabase
         .from('user_collections')
         .select(`
@@ -32,7 +57,7 @@ export default function useCollectionData(user) {
             set_code,
             image_url,
             version,
-            price_histories:price_history(
+            price_history (
               price,
               date,
               is_foil
@@ -64,21 +89,43 @@ export default function useCollectionData(user) {
         return;
       }
 
-      const processedCards = data.map(item => ({
-        ...item.card_printing.card,
-        ...item.card_printing,
-        quantity: item.quantity,
-        isFoil: item.is_foil,
-        card_printing_id: item.card_printing.id, // Ajout explicite de card_printing_id
-        image: item.card_printing.image_url, // Ajout de l'image
-        set_name: item.card_printing.set.name, // Ajout du nom du set
-        price: item.card_printing.price_histories.find(p => !p.is_foil)?.price || 0, // Ajout du prix normal
-        foil_price: item.card_printing.price_histories.find(p => p.is_foil)?.price || 0, // Ajout du prix foil
-      }));
+      console.log('📦 Données brutes reçues:', data);
+
+      // Process the data handling null values safely
+      const processedCards = data.map(item => {
+        const card = item.card_printing.card || {};
+        const set = item.card_printing.set || {};
+        const priceHistory = item.card_printing.price_history || [];
+
+        // Get latest prices
+        const latestNormalPrice = priceHistory
+          .filter(ph => !ph.is_foil)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          [0]?.price || 0;
+
+        const latestFoilPrice = priceHistory
+          .filter(ph => ph.is_foil)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          [0]?.price || 0;
+
+        return {
+          ...card,
+          ...item.card_printing,
+          quantity: item.quantity,
+          isFoil: item.is_foil,
+          card_printing_id: item.card_printing.id,
+          image: item.card_printing.image_url || card.image_url,
+          set_name: set.name || 'Set inconnu',
+          set_code: set.code,
+          price: latestNormalPrice,
+          foil_price: latestFoilPrice
+        };
+      });
 
       setCards(processedCards);
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des cartes:', error);
+      setToast("❌ Erreur lors de la récupération des cartes");
       setCards([]);
     }
   };
@@ -100,25 +147,43 @@ export default function useCollectionData(user) {
     fetchCardsForCollection(selectedCollection.id);
   }, [selectedCollection]); // Removed cards from dependencies
 
+  useEffect(() => {
+    if (collections.length > 0) {
+      collections.forEach(collection => {
+        calculateCollectionValue(collection.id);
+      });
+    }
+  }, [collections]);
+
+  // Effect pour calculer la valeur des collections au chargement
+  useEffect(() => {
+    if (collections.length > 0) {
+      console.log('🔄 Calcul des valeurs pour toutes les collections');
+      collections.forEach(collection => {
+        calculateCollectionValue(collection.id);
+      });
+    }
+  }, [collections]);
+
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 3000);
   };
 
   const fetchCollections = async () => {
-    const { data, error } = await supabase
-      .from('collections')
-      .select('*')  // Sélectionner tous les champs
-      .eq('user_id', user.id);
-      
-    if (error) {
-      console.error('Erreur fetching collections:', error);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from('collections')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setCollections(data || []);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des collections:', error);
+      setToast("❌ Erreur lors de la récupération des collections");
     }
-    setCollections(data);
-    // Correction : reset aussi les stats pour éviter un affichage obsolète
-    setCollectionStats({});
-    data.forEach(col => fetchStats(col.id)); // Utiliser l'ID plutôt que le nom
   };
 
   const fetchStats = async (collectionId) => {
@@ -133,9 +198,9 @@ export default function useCollectionData(user) {
         .select(`
           quantity,
           is_foil,
-          card_printing:card_printing_id!inner (
+          card_printing:card_printing_id (
             id,
-            price_histories:price_history(
+            price_history (
               price,
               date
             )
@@ -150,7 +215,7 @@ export default function useCollectionData(user) {
       }
 
       const value = data.reduce((sum, item) => {
-        const priceHistories = item.card_printing?.price_histories || [];
+        const priceHistories = item.card_printing?.price_history || [];
         const latestPrice = priceHistories
           .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.price || 0;
 
@@ -166,6 +231,61 @@ export default function useCollectionData(user) {
       }));
     } catch (error) {
       console.error('Erreur lors du calcul des stats:', error);
+    }
+  };
+
+  const calculateCollectionValue = async (collectionId) => {
+    setLoadingValues(prev => ({ ...prev, [collectionId]: true }));
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_collections')
+        .select(`
+          quantity,
+          is_foil,
+          card_printing:card_printing_id (
+            price_history (
+              price,
+              is_foil,
+              date
+            )
+          )
+        `)
+        .eq('collection_id', collectionId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      let totalValue = 0;
+      let cardCount = 0;
+
+      data.forEach(item => {
+        const priceHistory = item.card_printing?.price_history || [];
+        const relevantPrices = priceHistory
+          .filter(ph => ph.is_foil === item.is_foil)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const latestPrice = relevantPrices[0]?.price || 0;
+        totalValue += latestPrice * item.quantity;
+        cardCount += item.quantity;
+      });
+
+      setCollectionStats(prev => ({
+        ...prev,
+        [collectionId]: {
+          value: parseFloat(totalValue.toFixed(2)),
+          count: cardCount
+        }
+      }));
+
+    } catch (error) {
+      console.error('❌ Erreur lors du calcul de la valeur:', error);
+      setCollectionStats(prev => ({
+        ...prev,
+        [collectionId]: { value: 0, count: 0 }
+      }));
+    } finally {
+      setLoadingValues(prev => ({ ...prev, [collectionId]: false }));
     }
   };
 
@@ -248,6 +368,8 @@ export default function useCollectionData(user) {
     fetchCardsForCollection,
     collectionStats,
     showToast,
-    toast
+    toast,
+    loadingValues,
+    calculateCollectionValue
   };
 }
