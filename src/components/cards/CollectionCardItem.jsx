@@ -77,85 +77,90 @@ export default function CollectionCardItem({
       showToast("❌ Erreur lors de la suppression");
     }
   };
-  const editingContent = (
-    <div className="mt-3 px-4 pb-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center flex-1">
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => {
-              const newValue = parseInt(e.target.value, 10);
-              if (newValue && newValue > 0) {
-                setQuantity(newValue);
-              }
-            }}
-            className="w-24 text-center bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
-            onBlur={(e) => {
-              const value = parseInt(e.target.value, 10);
-              if (!value || value < 1) {
-                setQuantity(1);
-              }
-            }}
-          />
-          <button
-            className={`p-1 ml-2 rounded-full ${isFoil ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'} hover:opacity-80 transition-opacity`}
-            onClick={() => setIsFoil(!isFoil)}
-            title="Foil"
-          >
-            <Sparkles size={16} />
-          </button>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={handleUpdate}
-          className="flex-1 bg-green-600 text-white text-sm px-3 py-1.5 rounded hover:bg-green-700 transition-colors"
-        >
-          Sauvegarder
-        </button>
-        <button
-          onClick={() => setIsEditing(false)}
-          className="flex-1 bg-gray-300 text-gray-700 text-sm px-3 py-1.5 rounded hover:bg-gray-400 transition-colors"
-        >
-          Annuler
-        </button>
-      </div>
-    </div>
-  );
-  const viewingContent = (
-    <div className="mt-2 flex gap-2">
-      <button
-        onClick={() => setIsEditing(true)}
-        className="flex-1 bg-indigo-600 text-white text-sm px-3 py-1.5 rounded hover:bg-indigo-700 transition-colors"
-      >
-        Modifier
-      </button>
-      <button
-        onClick={handleDelete}
-        className="flex-1 bg-red-600 text-white text-sm px-3 py-1.5 rounded hover:bg-red-700 transition-colors"
-      >
-        Supprimer
-      </button>
-    </div>
-  );
+
   return (
     <CardItem
       card={card}
-      className="hover:shadow-md"
+      className="relative bg-white rounded-xl overflow-hidden hover:shadow-md transition-all"
       topLeftBadge={!isEditing && quantity > 1 && (
-        <div className="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full shadow">
-          x{quantity}
+        <div className="absolute top-3 left-3 z-20">
+          <div className="bg-blue-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow">
+            x{quantity}
+          </div>
         </div>
       )}
       topRightBadge={!isEditing && isFoil && (
-        <div className="p-1 rounded-full bg-purple-500 text-white shadow flex items-center justify-center">
-          <Sparkles size={14} />
+        <div className="absolute top-2 right-3 z-20">
+          <span className="px-2 py-0.5 text-xs font-medium text-white bg-purple-500 rounded shadow-sm">
+            <Sparkles size={10} className="inline mr-1" />
+            Foil
+          </span>
         </div>
       )}
     >
-      {isEditing ? editingContent : viewingContent}
+      {isEditing ? (
+        <div className="mt-3 px-4 pb-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center flex-1">
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => {
+                  const newValue = parseInt(e.target.value, 10);
+                  if (newValue && newValue > 0) {
+                    setQuantity(newValue);
+                  }
+                }}
+                className="w-24 text-center bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  if (!value || value < 1) {
+                    setQuantity(1);
+                  }
+                }}
+              />
+              <button
+                className={`p-2 ml-2 rounded-lg ${isFoil ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700'} hover:opacity-90 transition-all flex items-center gap-1`}
+                onClick={() => setIsFoil(!isFoil)}
+                title="Foil"
+              >
+                <Sparkles size={16} />
+                Foil
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleUpdate}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              Sauvegarder
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 px-4 pb-4 flex gap-2">
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+          >
+            Modifier
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+          >
+            Supprimer
+          </button>
+        </div>
+      )}
     </CardItem>
   );
 }

@@ -3,19 +3,29 @@ import React, { useState } from 'react';
 import { Sparkles, Check } from 'lucide-react';
 import CardItem from './CardItem';
 
-export default function SearchCardItem({ 
-  card,
+export default function SearchCardItem({   card,
   isSelected = false,
   onSelect,
   updateQuantity,
   selectedCollection 
 }) {
-  const [quantity, setQuantity] = useState(1);
+  // Trouver la quantité initiale
+  const initialQuantity = isSelected ? card.quantity || 1 : 1;
+  const [localQuantity, setLocalQuantity] = useState(initialQuantity);
+
+  // Mettre à jour la quantité locale quand la carte change ou est sélectionnée/désélectionnée
+  React.useEffect(() => {
+    if (isSelected && card.quantity) {
+      setLocalQuantity(card.quantity);
+    } else if (!isSelected) {
+      setLocalQuantity(1);
+    }
+  }, [isSelected, card.quantity]);
 
   const handleQuantityChange = (newQuantity) => {
     const val = parseInt(newQuantity, 10);
     if (val > 0) {
-      setQuantity(val);
+      setLocalQuantity(val);
       if (isSelected) {
         updateQuantity(card.id, val, card);
       }
@@ -37,7 +47,7 @@ export default function SearchCardItem({
           <input
             type="number"
             min="1"
-            value={quantity}
+            value={localQuantity}
             onChange={(e) => handleQuantityChange(e.target.value)}
             className="w-20 text-center bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
             onClick={(e) => e.stopPropagation()}
@@ -47,8 +57,8 @@ export default function SearchCardItem({
 
       {/* Badge Foil */}
       {card.isFoil && (
-        <div className="absolute top-1 right-3">
-          <span className="px-2 py-0.5 text-xs font-medium text-white bg-purple-500 rounded">
+        <div className="absolute top-2 right-3 z-20">
+          <span className="px-2 py-0.5 text-xs font-medium text-white bg-purple-500 rounded shadow-sm rounded-2">
             <Sparkles size={10} className="inline mr-1" />
             Foil
           </span>

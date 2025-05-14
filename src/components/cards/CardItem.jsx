@@ -25,7 +25,7 @@ export default function CardItem({
             <img
               src={card.image}
               alt={card.name}
-              className="w-full h-full object-contain rounded-lg"
+              className={`w-full h-full object-cover rounded-xl ${card.isFoil ? 'border border-2 border-purple-500' : ''}`}
             />
           </div>
         )}
