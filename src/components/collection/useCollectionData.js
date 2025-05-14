@@ -118,7 +118,8 @@ export default function useCollectionData(user) {
           set_name: set.name || 'Set inconnu',
           set_code: set.code,
           price: latestNormalPrice,
-          foil_price: latestFoilPrice
+          foil_price: latestFoilPrice,
+          price_history: priceHistory // Ajout de l'historique des prix complet
         };
       });
 

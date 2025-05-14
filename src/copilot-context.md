@@ -66,6 +66,10 @@ A React web application for managing Trading Card Game (TCG) collections, with a
   - Foil/non-foil variants (⬛)
   - Card image display (⬛)
   - Card details tooltip (🟥)
+  - Price history visualization:
+    - Interactive chart with normal/foil prices (⬛)
+    - Time period filtering (⬛)
+    - Price trend analysis (🟨)
 
 ### Set Results (🟨)
 - Set management:
