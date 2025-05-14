@@ -143,8 +143,8 @@ export default function SearchBox({
             </button>
           </div>
 
-          <div className="flex items-end gap-4">
-            <div className="w-64">
+          <div className="grid grid-cols-[264px,1fr] gap-4">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Extension</label>
               <Select
                 options={lorcanaSets.map(set => ({
@@ -161,10 +161,11 @@ export default function SearchBox({
                 styles={customSelectStyles}
                 placeholder="Sélectionner une extension"
                 isClearable
+                className="w-full"
               />
             </div>
 
-            <div className="flex-1">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Numéro(s)</label>
               <div className="flex gap-2">
                 <input
