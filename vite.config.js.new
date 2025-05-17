@@ -1,0 +1,58 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import fs from 'fs';
+import path from 'path';
+import envCompatible from 'vite-plugin-env-compatible';
+import { readdirSync } from 'fs';
+
+// Fonction pour copier les fichiers statiques du dossier public
+function copyPublicFolder() {
+  const publicDir = path.resolve(__dirname, 'public');
+  const files = readdirSync(publicDir);
+  
+  return {
+    name: 'copy-public-folder',
+    buildStart() {
+      files.forEach(file => {
+        if (file !== 'index.html') {
+          this.emitFile({
+            type: 'asset',
+            fileName: file,
+            source: fs.readFileSync(path.resolve(publicDir, file))
+          });
+        }
+      });
+    }
+  };
+}
+
+export default defineConfig({
+  plugins: [
+    react(),
+    envCompatible(),
+    copyPublicFolder()
+  ],  
+  server: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'dev.tcgbot.local-key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'dev.tcgbot.local.pem')),
+    },
+    host: 'dev.tcgbot.local',
+    port: 3000,
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      'src': path.resolve(__dirname, './src'),
+      'public': path.resolve(__dirname, './public')
+    }
+  },
+  define: {
+    'process.env': process.env,
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+  },
+  build: {
+    outDir: 'build',
+    assetsDir: 'static'
+  }
+});
