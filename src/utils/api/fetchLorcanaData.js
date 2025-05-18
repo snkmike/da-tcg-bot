@@ -57,19 +57,27 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
     const allCardsArrays = await Promise.all(setCardsPromises);
     const allCards = allCardsArrays.flat();
 
+    // Include foil cards in the results
+    const allCardsWithFoil = allCards.flatMap(card => {
+      const foilCard = { ...card, isFoil: true, foil_price: card.foil_price };
+      return card.foil_price ? [card, foilCard] : [card];
+    });
+
+    console.log('📦 Total cards including foil:', allCardsWithFoil.length);
+
     console.log('📦 Total cards fetched:', allCards.length);
 
     // Apply filters locally
     const filteredByQuery = query
-      ? allCards.filter(card => card.name.toLowerCase().includes(query.toLowerCase()))
-      : allCards;
+      ? allCardsWithFoil.filter(card => card.name.toLowerCase().includes(query.toLowerCase()))
+      : allCardsWithFoil;
 
     const filteredByRarity = selectedRarities.length > 0
       ? filteredByQuery.filter(card => selectedRarities.includes(card.rarity?.toLowerCase()))
       : filteredByQuery;
 
     const filteredByPrice = filteredByRarity.filter(card => {
-      const price = parseFloat(card.price || 0);
+      const price = parseFloat(card.isFoil ? card.foil_price : card.price || 0);
       const min = parseFloat(minPrice || 0);
       const max = parseFloat(maxPrice || Infinity);
       return price >= min && price <= max;
