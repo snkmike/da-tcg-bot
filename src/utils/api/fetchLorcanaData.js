@@ -4,71 +4,104 @@
 // this is useful for the search bar in the header and the search page by name.
 export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, selectedRarities, showSetResults) {
   console.log('🔎 Fetching Lorcana data with:', { query, filterSet, minPrice, maxPrice, selectedRarities, showSetResults });
+
+  // Return early if no query is provided
+  if (!query || query.trim().length < 3) {
+    console.log('⚠️ Query too short or empty. Skipping fetch.');
+    return [];
+  }
+
   try {
-    const nameEncoded = encodeURIComponent(query || 'Elsa');
-    const response = await fetch(`https://api.lorcast.com/v0/cards/search?q=${nameEncoded}`);
-    const json = await response.json();
+    let allCards = [];
 
-    // Créer deux entrées pour chaque carte si elle a une version foil
-    const formatted = (json.results || []).reduce((acc, card) => {
-      // Extraire l'UUID du format crd_UUID
-      const cardUUID = card.id.replace('crd_', '');
-      
-      const baseCard = {
-        id: card.id,
-        name: card.name,
-        version: card.version || null,
-        set_name: card.set?.name || 'Set inconnu',
-        rarity: card.rarity,          image: card.image_uris?.digital?.normal || '',
-          price: card.prices?.usd || null,
-          foil_price: card.prices?.usd_foil || null,
-          collector_number: card.collector_number,
-          set_code: card.set?.code || '',
-          set_name: card.set?.name || 'Set inconnu',
-          isFoil: false,
-          card_printing_id: card.id
-        };
+    // Ensure rarity filters are not applied by default
+    const rarityFilter = selectedRarities && selectedRarities.length > 0
+      ? selectedRarities.map(rarity => `rarity:${rarity}`).join(' OR ')
+      : null;
+    const fullQuery = rarityFilter ? `${query} (${rarityFilter})` : query;
 
-        acc.push(baseCard);
+    // Log the full query for debugging
+    console.log('🔍 Full query:', fullQuery);
 
-        if (card.prices?.usd_foil) {
-          acc.push({
-            ...baseCard,
-            id: `${card.id}_foil`,
-            isFoil: true,
-            price: card.prices.usd_foil,
-            card_printing_id: card.id // Use same UUID for foil version
-          });
-        }
-
-      return acc;
-    }, []);
-
-    const filtered = filterSet === 'all'
-      ? formatted
-      : formatted.filter(card => card.set_name === filterSet);
-
-    const priceFiltered = filtered.filter(card => {
-      const p = parseFloat(card.price || 0);
-      const min = parseFloat(minPrice || 0);
-      const max = parseFloat(maxPrice || Infinity);
-      return p >= min && p <= max;
-    });
-
-    const rarityFiltered = selectedRarities.length === 0
-      ? priceFiltered
-      : priceFiltered.filter(card =>
-          selectedRarities.includes((card.rarity || '').toLowerCase())
-        );
-
-    let final = rarityFiltered;
-    if (showSetResults) {
-      final = [...rarityFiltered].sort((a, b) =>
-        (a.set_name || '').localeCompare(b.set_name || '')
-      );
+    // Use the full query including both Enchanted and normal cards
+    const searchResponse = await fetch(`https://api.lorcast.com/v0/cards/search?q=${encodeURIComponent(fullQuery)}`);
+    if (!searchResponse.ok) {
+      throw new Error(`API returned status ${searchResponse.status}: ${searchResponse.statusText}`);
     }
 
-    return final;
+    const searchJson = await searchResponse.json();
+
+    if (!Array.isArray(searchJson.results)) {
+      throw new Error('Invalid search response format');
+    }
+
+    allCards = searchJson.results.map(card => ({
+      id: card.id,
+      name: card.name,
+      version: card.version || null,
+      set_name: card.set?.name || 'Set inconnu',
+      rarity: card.rarity,
+      image: card.image_uris?.digital?.normal || '',
+      price: card.prices?.usd || null,
+      foil_price: card.prices?.usd_foil || null,
+      collector_number: card.collector_number,
+      set_code: card.set?.code || '',
+      isFoil: false,
+      card_printing_id: card.id
+    }));
+
+    // Perform an additional search for Enchanted cards
+    const enchantedQuery = `${query} (rarity:enchanted)`;
+    console.log('🔍 Enchanted query:', enchantedQuery);
+
+    const enchantedResponse = await fetch(`https://api.lorcast.com/v0/cards/search?q=${encodeURIComponent(enchantedQuery)}`);
+    if (!enchantedResponse.ok) {
+      throw new Error(`API returned status ${enchantedResponse.status}: ${enchantedResponse.statusText}`);
+    }
+
+    const enchantedJson = await enchantedResponse.json();
+
+    if (!Array.isArray(enchantedJson.results)) {
+      throw new Error('Invalid enchanted search response format');
+    }
+
+    const enchantedCards = enchantedJson.results.map(card => ({
+      id: card.id,
+      name: card.name,
+      version: card.version || null,
+      set_name: card.set?.name || 'Set inconnu',
+      rarity: card.rarity,
+      image: card.image_uris?.digital?.normal || '',
+      price: card.prices?.usd || null,
+      foil_price: card.prices?.usd_foil || null,
+      collector_number: card.collector_number,
+      set_code: card.set?.code || '',
+      isFoil: false,
+      card_printing_id: card.id
+    }));
+
+    // Combine normal and enchanted cards
+    allCards = [...allCards, ...enchantedCards];
+
+    // Filter by rarity if specified
+    const filteredByRarity = selectedRarities.length > 0
+      ? allCards.filter(card => selectedRarities.includes(card.rarity?.toLowerCase()))
+      : allCards;
+
+    // Filter by price range if specified
+    const filteredByPrice = filteredByRarity.filter(card => {
+      const price = parseFloat(card.price || 0);
+      const min = parseFloat(minPrice || 0);
+      const max = parseFloat(maxPrice || Infinity);
+      return price >= min && price <= max;
+    });
+
+    // Sort results if required
+    const sortedResults = showSetResults
+      ? [...filteredByPrice].sort((a, b) => (a.set_name || '').localeCompare(b.set_name || ''))
+      : filteredByPrice;
+
+    return sortedResults;
   } catch (err) {
     console.error('❌ Erreur fetch Lorcana:', err);
     return [];
@@ -98,7 +131,7 @@ export async function fetchCardByNumber(setCode, numbers) {
     console.log('📋 Tableau des doublons:', duplicates);
 
     // Traiter chaque numéro pour l'API (retirer les F)
-    const apiNumbers = [...new Set(originalNumbers.map(n => n.trim().replace(/F$/i, '')))];
+    const apiNumbers = [...new Set(originalNumbers.map(n => n.trim().replace(/F$/i, '')))]; 
     console.log('🎯 Numéros uniques pour API (sans F):', apiNumbers);
 
     // Ne garder que les vrais doublons et créer les warnings
@@ -156,7 +189,7 @@ export async function fetchCardByNumber(setCode, numbers) {
   } catch (err) {
     console.error('❌ Erreur fetch par numéro :', err);
     return {
-      cards: [],
+      cards: [], 
       duplicates: {}
     };
   }
