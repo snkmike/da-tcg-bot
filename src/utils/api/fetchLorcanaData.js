@@ -34,20 +34,59 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
         }
 
         const setCardsJson = await setCardsResponse.json();
-        return setCardsJson.map(card => ({
-          id: card.id,
-          name: card.name,
-          version: card.version || null,
-          set_name: card.set?.name || 'Set inconnu',
-          rarity: card.rarity,
-          image: card.image_uris?.digital?.normal || '',
-          price: card.prices?.usd || null,
-          foil_price: card.prices?.usd_foil || null,
-          collector_number: card.collector_number,
-          set_code: card.set?.code || '',
-          isFoil: false,
-          card_printing_id: card.id
-        }));
+        // Directly create entries for each available version (normal, foil)
+        return setCardsJson.flatMap(apiCard => {
+          const versionsOutput = [];
+          const commonData = {
+            card_printing_id: apiCard.id,
+            name: apiCard.name,
+            api_version_name: apiCard.version || null,
+            set_name: apiCard.set?.name || 'Set inconnu',
+            rarity: apiCard.rarity,
+            image: apiCard.image_uris?.digital?.normal || '',
+            collector_number: apiCard.collector_number,
+            set_code: apiCard.set?.code || '',
+          };
+
+          const hasNormalPrice = apiCard.prices?.usd !== null && apiCard.prices?.usd !== undefined;
+          const hasFoilPrice = apiCard.prices?.usd_foil !== null && apiCard.prices?.usd_foil !== undefined;
+
+          if (hasNormalPrice) {
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-normal`,
+              price: apiCard.prices.usd,
+              isFoil: false,
+            });
+          }
+
+          if (hasFoilPrice) {
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-foil`,
+              price: apiCard.prices.usd_foil,
+              isFoil: true,
+            });
+          }
+
+          if (versionsOutput.length === 0) {
+            // Card has no listed prices, create a default entry
+            let defaultIsFoil = false;
+            if (commonData.api_version_name) {
+              const lowerVersion = commonData.api_version_name.toLowerCase();
+              if (lowerVersion.includes('enchanted') || lowerVersion.includes('foil') || lowerVersion.includes('promo')) {
+                defaultIsFoil = true;
+              }
+            }
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-default`,
+              price: null,
+              isFoil: defaultIsFoil,
+            });
+          }
+          return versionsOutput;
+        });
       } catch (err) {
         console.warn(`⚠️ Error fetching cards for set ${set.code}:`, err);
         return [];
@@ -55,29 +94,21 @@ export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, sel
     });
 
     const allCardsArrays = await Promise.all(setCardsPromises);
-    const allCards = allCardsArrays.flat();
+    const allCards = allCardsArrays.flat(); // allCards now contains all distinct versions
 
-    // Include foil cards in the results
-    const allCardsWithFoil = allCards.flatMap(card => {
-      const foilCard = { ...card, isFoil: true, foil_price: card.foil_price };
-      return card.foil_price ? [card, foilCard] : [card];
-    });
+    console.log('📦 Total card versions generated:', allCards.length);
 
-    console.log('📦 Total cards including foil:', allCardsWithFoil.length);
-
-    console.log('📦 Total cards fetched:', allCards.length);
-
-    // Apply filters locally
+    // Apply filters locally using the new allCards list
     const filteredByQuery = query
-      ? allCardsWithFoil.filter(card => card.name.toLowerCase().includes(query.toLowerCase()))
-      : allCardsWithFoil;
+      ? allCards.filter(card => card.name.toLowerCase().includes(query.toLowerCase()))
+      : allCards;
 
     const filteredByRarity = selectedRarities.length > 0
       ? filteredByQuery.filter(card => selectedRarities.includes(card.rarity?.toLowerCase()))
       : filteredByQuery;
 
     const filteredByPrice = filteredByRarity.filter(card => {
-      const price = parseFloat(card.isFoil ? card.foil_price : card.price || 0);
+      const price = parseFloat(card.price || 0); // Use card.price directly
       const min = parseFloat(minPrice || 0);
       const max = parseFloat(maxPrice || Infinity);
       return price >= min && price <= max;
