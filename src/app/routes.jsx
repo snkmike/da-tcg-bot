@@ -1,8 +1,5 @@
 import React from 'react';
 import SearchTab from '../components/search/SearchTab';
-import PriceTab from '../components/price/PriceTab';
-import AlertsTab from '../components/alerts/AlertsTab';
-import TagsTab from '../components/tags/TagsTab';
 import DashboardTab from '../components/dashboard/DashboardTab';
 import MyCollectionTab from '../components/collection/MyCollectionTab';
 import LorcanaResults from '../components/cards/LorcanaResults';
@@ -58,14 +55,8 @@ export function renderContent(activeTab, state) {
           filterKey={filterKey}
         />
       );
-    case 'price':
-      return <PriceTab selectedCard={selectedCard || searchResults[0] || mockCards[0]} />;
     case 'collection':
       return <MyCollectionTab user={user} />;
-    case 'alerts':
-      return <AlertsTab />;
-    case 'tags':
-      return <TagsTab cards={mockCards} />;
     case 'dashboard':
       return <DashboardTab portfolio={userPortfolio} />;
     default:

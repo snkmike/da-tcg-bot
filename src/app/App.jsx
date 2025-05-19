@@ -3,7 +3,7 @@ import { useAppState } from './useAppState';
 import { renderContent } from './routes';
 import Auth from '../components/auth/Auth';
 import TabButton from '../components/ui/TabButton';
-import { Search, Bell, Tag, PieChart, Library } from 'lucide-react';
+import { Search, PieChart, Library } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { fetchLorcanaData } from '../utils/api/fetchLorcanaData';
 
@@ -323,9 +323,6 @@ export default function App() {
           <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<PieChart size={18} />} label="Dashboard" />
           <TabButton active={activeTab === 'search'} onClick={() => setActiveTab('search')} icon={<Search size={18} />} label="Recherche" />
           <TabButton active={activeTab === 'collection'} onClick={() => setActiveTab('collection')} icon={<Library size={18} />} label="Ma Collection" />
-          <TabButton active={activeTab === 'price'} onClick={() => setActiveTab('price')} icon={<PieChart size={18} />} label="Prix" />
-          <TabButton active={activeTab === 'alerts'} onClick={() => setActiveTab('alerts')} icon={<Bell size={18} />} label="Alertes" />
-          <TabButton active={activeTab === 'tags'} onClick={() => setActiveTab('tags')} icon={<Tag size={18} />} label="Étiquettes" />
         </div>
       </nav>
 
