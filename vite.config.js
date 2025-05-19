@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import envCompatible from 'vite-plugin-env-compatible';
 
-export default defineConfig({  plugins: [
+export default defineConfig({
+  plugins: [
     react({
       // Inclure les fichiers .js comme contenant potentiellement du JSX
       include: '**/*.{jsx,js,ts,tsx}',
@@ -20,7 +21,15 @@ export default defineConfig({  plugins: [
     },
     host: 'dev.tcgbot.local',
     port: 3000,
-  },  resolve: {
+    proxy: { // Ajout de la configuration du proxy
+      '/api': {
+        target: 'http://localhost:3001', // Votre serveur apiServer.mjs
+        changeOrigin: true,
+        // secure: false, // Décommentez si votre backend n'est pas en HTTPS (ce qui est le cas ici)
+      },
+    },
+  },
+  resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       'src': path.resolve(__dirname, './src'),
@@ -38,7 +47,8 @@ export default defineConfig({  plugins: [
   build: {
     outDir: 'build',
     assetsDir: 'static'
-  },  optimizeDeps: {
+  }, // Ajout d'une virgule ici si optimizeDeps suit
+  optimizeDeps: {
     esbuildOptions: {
       define: {
         global: 'globalThis'

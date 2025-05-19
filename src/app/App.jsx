@@ -3,13 +3,16 @@ import { useAppState } from './useAppState';
 import { renderContent } from './routes';
 import Auth from '../components/auth/Auth';
 import TabButton from '../components/ui/TabButton';
-import { Search, PieChart, Library } from 'lucide-react';
+import { Search, PieChart, Library, User } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { fetchLorcanaData } from '../utils/api/fetchLorcanaData';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function App() {
   const state = useAppState();
   const { user, setUser, activeTab, setActiveTab } = state;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSet, setFilterSet] = useState('all');
@@ -20,6 +23,19 @@ export default function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [filterGame, setFilterGame] = useState('all');
   const [availableSets, setAvailableSets] = useState([]);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/mon-compte' || path === '/auth/callback') {
+      setActiveTab('mon-compte');
+    } else if (path === '/ma-collection') {
+      setActiveTab('ma-collection');
+    } else if (path === '/tableau-de-bord') {
+      setActiveTab('tableau-de-bord');
+    } else if (path === '/' || path === '/recherche') {
+      setActiveTab('recherche');
+    }
+  }, [location.pathname, setActiveTab]);
 
   const handleAddCardsToPortfolio = async (cards, collectionId) => {
     console.log('🎯 Début handleAddCardsToPortfolio:', { cards, collectionId });
@@ -35,7 +51,6 @@ export default function App() {
 
       console.log('📦 Cards to process:', cards);
       
-      // Update foil status for all cards
       cards.forEach(card => {
         if (card.id) {
           const isFoil = card.id.endsWith('_foil');
@@ -43,14 +58,11 @@ export default function App() {
         }
       });
 
-      // Now prepare the collection entries
       const enrichedCards = await Promise.all(cards.map(async card => {
-        // Clean the UUID as we did before
         const isFoil = card.id.endsWith('_foil');
         const cardUuid = card.id.replace('crd_', '').replace('_foil', '');
         console.log('🔍 Looking for card printing:', { cardUuid, set_code: card.set_code, isFoil });
         
-        // Get the card printing ID
         const { data: cardPrintings, error: printingError } = await supabase
           .from('card_printings')
           .select('id')
@@ -64,12 +76,9 @@ export default function App() {
 
         let cardPrinting = cardPrintings?.[0];
 
-        // If no card printing exists, create it
         if (!cardPrinting) {
           console.log('➕ Creating missing card printing:', { cardUuid, set_code: card.set_code });
           
-          // Create card if needed
-          // Format the UUID with hyphens if needed
           const formattedUuid = cardUuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
           console.log('🔍 Looking for existing card:', formattedUuid);
           
@@ -108,7 +117,6 @@ export default function App() {
             }
           }
 
-          // Get or create set
           const { data: existingSet } = await supabase
             .from('sets')
             .select('id')
@@ -136,7 +144,6 @@ export default function App() {
             setId = existingSet.id;
           }
 
-          // Create the card printing
           const newCardPrintingId = crypto.randomUUID();
           const { data: newPrinting, error: insertError } = await supabase
             .from('card_printings')
@@ -159,7 +166,6 @@ export default function App() {
           cardPrinting = newPrinting;
         }
           
-        // Handle the case where the card printing wasn't found but also wasn't created
         if (!cardPrinting) {
           console.error('❌ Failed to get or create card printing:', card);
           return null;
@@ -184,7 +190,6 @@ export default function App() {
 
       console.log('📥 Cartes à insérer:', validCards);
 
-      // Insérer les cartes dans la collection
       const { error: insertError } = await supabase
         .from('user_collections')
         .insert(validCards);
@@ -194,14 +199,11 @@ export default function App() {
         return;
       }
 
-      // Ajouter les prix dans price_history
       const priceEntries = [];
       
       for (const card of cards) {
-        // Clean the UUID as we did before
         const cardUuid = card.id.replace('crd_', '').replace('_foil', '');
         
-        // Get the card printing ID for this card
         const { data: cardPrinting } = await supabase
           .from('card_printings')
           .select('id')
@@ -253,18 +255,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Ne pas faire de recherche si on vient de faire une recherche par numéro
     if (window.lastSearchWasById) {
       window.lastSearchWasById = false;
       return;
     }
 
-    // Ne rien faire s'il n'y a pas de requête valide
     if (!searchQuery || searchQuery.length < 3 || filterGame !== 'Lorcana') {
       return;
     }
     
-    // Ne pas écraser les résultats existants s'ils sont présents
     if (searchResults.length > 0) {
       return;
     }
@@ -287,7 +286,6 @@ export default function App() {
         const json = await res.json();
         const uniqueSets = [...new Set(json.results.map(set => set.name).filter(Boolean))].sort();
         setAvailableSets(uniqueSets);
-        //console.log('📦 Sets chargés (preload):', uniqueSets);
       } catch (err) {
         console.error('Erreur chargement sets Lorcana:', err);
         setAvailableSets([]);
@@ -301,53 +299,84 @@ export default function App() {
     }
   }, [filterGame]);
 
+  const allTabs = [
+    { name: 'tableau-de-bord', label: 'Tableau de Bord', icon: PieChart, path: '/tableau-de-bord' },
+    { name: 'recherche', label: 'Recherche', icon: Search, path: '/recherche' },
+    { name: 'ma-collection', label: 'Ma Collection', icon: Library, path: '/ma-collection' },
+    { name: 'mon-compte', label: 'Mon Compte', icon: User, path: '/mon-compte' },
+  ];
+
+  const mainNavTabs = allTabs.filter(tab => tab.name !== 'mon-compte');
+  const myAccountTabInfo = allTabs.find(tab => tab.name === 'mon-compte');
+
   if (!user) return <Auth setUser={setUser} />;
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <header className="bg-indigo-700 text-white p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">DaTCG Optimizer</h1>
-        <button
-          className="text-sm underline hover:text-red-300"
-          onClick={async () => {
-            await supabase.auth.signOut();
-            setUser(null);
-          }}
-        >
-          Déconnexion
-        </button>
-      </header>
-
-      <nav className="bg-white shadow-md">
-        <div className="flex">
-          <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<PieChart size={18} />} label="Dashboard" />
-          <TabButton active={activeTab === 'search'} onClick={() => setActiveTab('search')} icon={<Search size={18} />} label="Recherche" />
-          <TabButton active={activeTab === 'collection'} onClick={() => setActiveTab('collection')} icon={<Library size={18} />} label="Ma Collection" />
+      <header className="bg-white text-gray-700 shadow-md sticky top-0 z-50">
+        {/* Row 1: Title, My Account (Pill), Logout (Pill) */}
+        <div className="p-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">TCG Bot</h1>
+          <div className="flex items-center space-x-3">
+            {myAccountTabInfo && (
+              <TabButton
+                key={myAccountTabInfo.name}
+                label={myAccountTabInfo.label}
+                icon={myAccountTabInfo.icon}
+                isActive={activeTab === myAccountTabInfo.name}
+                onClick={() => {
+                  setActiveTab(myAccountTabInfo.name);
+                  navigate(myAccountTabInfo.path);
+                }}
+                isPill={true}
+              />
+            )}
+            <button
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setUser(null);
+                navigate('/');
+              }}
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
-      </nav>
-
-      <main className="flex-1 p-4 overflow-y-auto">
-        {renderContent(activeTab, {
-          ...state,
-          searchQuery,
-          setSearchQuery,
-          filterSet,
-          setFilterSet,
-          minPrice,
-          setMinPrice,
-          maxPrice,
-          setMaxPrice,
-          selectedRarities,
-          setSelectedRarities,
-          showSetResults,
-          setShowSetResults,
-          filterGame,
-          setFilterGame,
-          searchResults,
-          availableSets,
-          filterKey: filterGame,
-          handleAddCardsToPortfolio
-        })}
+        {/* Row 2: Main Navigation Tabs (Pills) */}
+        <nav className="px-4 py-2 flex items-center space-x-2 border-t border-gray-200">
+          {mainNavTabs.map(tab => (
+            <TabButton
+              key={tab.name}
+              label={tab.label}
+              icon={tab.icon}
+              isPill={true}
+              isActive={activeTab === tab.name}
+              onClick={() => {
+                setActiveTab(tab.name);
+                navigate(tab.path);
+              }}
+            />
+          ))}
+        </nav>
+      </header>
+      <main className="flex-1 p-4 overflow-auto pt-28">
+        {renderContent(
+          activeTab, 
+          { 
+            ...state, 
+            searchQuery, setSearchQuery, 
+            searchResults, setSearchResults, 
+            filterGame, setFilterGame, 
+            filterSet, setFilterSet, 
+            showSetResults, setShowSetResults, 
+            setMinPrice, setMaxPrice, 
+            availableSets, 
+            handleAddCardsToPortfolio, 
+            selectedRarities, setSelectedRarities 
+          }, 
+          location
+        )}
       </main>
     </div>
   );
