@@ -26,6 +26,16 @@ export default function SearchFilters({
 
   const allRarities = ['Common', 'Uncommon', 'Rare', 'Super_rare', 'Legendary', 'Enchanted', 'Promo'];
 
+  // Ensure no rarities are included by default if none are selected
+  const effectiveRarities = selectedRarities.length === 0
+    ? []
+    : selectedRarities;
+
+  // Ensure foil and enchanted cards are always included
+  const includeFoilAndEnchanted = (rarity) => {
+    return rarity.toLowerCase() === 'foil' || rarity.toLowerCase() === 'enchanted';
+  };
+
   const toggleRarity = (rarity) => {
     const r = rarity.toLowerCase();
     if (selectedRarities.includes(r)) {
@@ -176,7 +186,7 @@ export default function SearchFilters({
             <div className="flex flex-wrap gap-3">
               {allRarities.map(rarity => {
                 const id = `rarity-${rarity.toLowerCase()}`;
-                const isSelected = selectedRarities.includes(rarity.toLowerCase());
+                const isSelected = effectiveRarities.includes(rarity.toLowerCase());
                 return (
                   <div key={rarity} className="flex items-center">
                     <input

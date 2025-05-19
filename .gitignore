@@ -18,6 +18,10 @@
 .env.test.local
 .env.production.local
 
+.env # Ignore the .env file
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+dev.tcgbot.local-key.pem
+dev.tcgbot.local.pem

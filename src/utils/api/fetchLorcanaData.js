@@ -4,71 +4,121 @@
 // this is useful for the search bar in the header and the search page by name.
 export async function fetchLorcanaData(query, filterSet, minPrice, maxPrice, selectedRarities, showSetResults) {
   console.log('🔎 Fetching Lorcana data with:', { query, filterSet, minPrice, maxPrice, selectedRarities, showSetResults });
+
+  // Return early if no query is provided
+  if (!query || query.trim().length < 3) {
+    console.log('⚠️ Query too short or empty. Skipping fetch.');
+    return [];
+  }
+
   try {
-    const nameEncoded = encodeURIComponent(query || 'Elsa');
-    const response = await fetch(`https://api.lorcast.com/v0/cards/search?q=${nameEncoded}`);
-    const json = await response.json();
-
-    // Créer deux entrées pour chaque carte si elle a une version foil
-    const formatted = (json.results || []).reduce((acc, card) => {
-      // Extraire l'UUID du format crd_UUID
-      const cardUUID = card.id.replace('crd_', '');
-      
-      const baseCard = {
-        id: card.id,
-        name: card.name,
-        version: card.version || null,
-        set_name: card.set?.name || 'Set inconnu',
-        rarity: card.rarity,          image: card.image_uris?.digital?.normal || '',
-          price: card.prices?.usd || null,
-          foil_price: card.prices?.usd_foil || null,
-          collector_number: card.collector_number,
-          set_code: card.set?.code || '',
-          set_name: card.set?.name || 'Set inconnu',
-          isFoil: false,
-          card_printing_id: card.id
-        };
-
-        acc.push(baseCard);
-
-        if (card.prices?.usd_foil) {
-          acc.push({
-            ...baseCard,
-            id: `${card.id}_foil`,
-            isFoil: true,
-            price: card.prices.usd_foil,
-            card_printing_id: card.id // Use same UUID for foil version
-          });
-        }
-
-      return acc;
-    }, []);
-
-    const filtered = filterSet === 'all'
-      ? formatted
-      : formatted.filter(card => card.set_name === filterSet);
-
-    const priceFiltered = filtered.filter(card => {
-      const p = parseFloat(card.price || 0);
-      const min = parseFloat(minPrice || 0);
-      const max = parseFloat(maxPrice || Infinity);
-      return p >= min && p <= max;
-    });
-
-    const rarityFiltered = selectedRarities.length === 0
-      ? priceFiltered
-      : priceFiltered.filter(card =>
-          selectedRarities.includes((card.rarity || '').toLowerCase())
-        );
-
-    let final = rarityFiltered;
-    if (showSetResults) {
-      final = [...rarityFiltered].sort((a, b) =>
-        (a.set_name || '').localeCompare(b.set_name || '')
-      );
+    // Fetch all sets and their cards in parallel
+    const setsResponse = await fetch('https://api.lorcast.com/v0/sets');
+    if (!setsResponse.ok) {
+      throw new Error(`API returned status ${setsResponse.status}: ${setsResponse.statusText}`);
     }
 
-    return final;
+    const setsJson = await setsResponse.json();
+
+    if (!Array.isArray(setsJson.results)) {
+      throw new Error('Invalid sets response format');
+    }
+
+    // Fetch cards for all sets in parallel
+    const setCardsPromises = setsJson.results.map(async (set) => {
+      try {
+        const setCardsResponse = await fetch(`https://api.lorcast.com/v0/sets/${set.code}/cards`);
+        if (!setCardsResponse.ok) {
+          console.warn(`⚠️ Failed to fetch cards for set ${set.code}`);
+          return [];
+        }
+
+        const setCardsJson = await setCardsResponse.json();
+        // Directly create entries for each available version (normal, foil)
+        return setCardsJson.flatMap(apiCard => {
+          const versionsOutput = [];
+          const commonData = {
+            card_printing_id: apiCard.id,
+            name: apiCard.name,
+            api_version_name: apiCard.version || null,
+            set_name: apiCard.set?.name || 'Set inconnu',
+            rarity: apiCard.rarity,
+            image: apiCard.image_uris?.digital?.normal || '',
+            collector_number: apiCard.collector_number,
+            set_code: apiCard.set?.code || '',
+          };
+
+          const hasNormalPrice = apiCard.prices?.usd !== null && apiCard.prices?.usd !== undefined;
+          const hasFoilPrice = apiCard.prices?.usd_foil !== null && apiCard.prices?.usd_foil !== undefined;
+
+          if (hasNormalPrice) {
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-normal`,
+              price: apiCard.prices.usd,
+              isFoil: false,
+            });
+          }
+
+          if (hasFoilPrice) {
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-foil`,
+              price: apiCard.prices.usd_foil,
+              isFoil: true,
+            });
+          }
+
+          if (versionsOutput.length === 0) {
+            // Card has no listed prices, create a default entry
+            let defaultIsFoil = false;
+            if (commonData.api_version_name) {
+              const lowerVersion = commonData.api_version_name.toLowerCase();
+              if (lowerVersion.includes('enchanted') || lowerVersion.includes('foil') || lowerVersion.includes('promo')) {
+                defaultIsFoil = true;
+              }
+            }
+            versionsOutput.push({
+              ...commonData,
+              id: `${apiCard.id}-default`,
+              price: null,
+              isFoil: defaultIsFoil,
+            });
+          }
+          return versionsOutput;
+        });
+      } catch (err) {
+        console.warn(`⚠️ Error fetching cards for set ${set.code}:`, err);
+        return [];
+      }
+    });
+
+    const allCardsArrays = await Promise.all(setCardsPromises);
+    const allCards = allCardsArrays.flat(); // allCards now contains all distinct versions
+
+    console.log('📦 Total card versions generated:', allCards.length);
+
+    // Apply filters locally using the new allCards list
+    const filteredByQuery = query
+      ? allCards.filter(card => card.name.toLowerCase().includes(query.toLowerCase()))
+      : allCards;
+
+    const filteredByRarity = selectedRarities.length > 0
+      ? filteredByQuery.filter(card => selectedRarities.includes(card.rarity?.toLowerCase()))
+      : filteredByQuery;
+
+    const filteredByPrice = filteredByRarity.filter(card => {
+      const price = parseFloat(card.price || 0); // Use card.price directly
+      const min = parseFloat(minPrice || 0);
+      const max = parseFloat(maxPrice || Infinity);
+      return price >= min && price <= max;
+    });
+
+    const sortedResults = showSetResults
+      ? [...filteredByPrice].sort((a, b) => (a.set_name || '').localeCompare(b.set_name || ''))
+      : filteredByPrice;
+
+    return sortedResults;
   } catch (err) {
     console.error('❌ Erreur fetch Lorcana:', err);
     return [];
@@ -156,7 +206,7 @@ export async function fetchCardByNumber(setCode, numbers) {
   } catch (err) {
     console.error('❌ Erreur fetch par numéro :', err);
     return {
-      cards: [],
+      cards: [], 
       duplicates: {}
     };
   }

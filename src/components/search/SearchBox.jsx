@@ -43,8 +43,8 @@ export default function SearchBox({
   const [setId, setSetId] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [noResult, setNoResult] = useState(false);
-  const [debounceTimeout, setDebounceTimeout] = useState(null);
   const [lorcanaSets, setLorcanaSets] = useState([]);
+  const [debounceTimeout, setDebounceTimeout] = useState(null);
 
   useEffect(() => {
     if (filterGame === 'Lorcana') {
@@ -65,13 +65,19 @@ export default function SearchBox({
     }
 
     const timeout = setTimeout(() => {
-      if (filterGame !== 'all' && value.length >= 3) {
+      if (filterGame === 'Lorcana' && value.trim().length >= 3) {
         console.log('🔍 Déclenchement de la recherche avec:', value);
         setSearchQuery(value);
       }
-    }, 500);
+    }, 500); // Debounce delay of 500ms
 
     setDebounceTimeout(timeout);
+  };
+
+  const handleSearch = () => {
+    if (inputValue.trim().length > 0) {
+      setSearchQuery(inputValue);
+    }
   };
 
   return (
@@ -104,6 +110,12 @@ export default function SearchBox({
             }`}
             disabled={filterGame !== 'Lorcana' || isNumberSearchOpen}
           />
+          <button
+            onClick={handleSearch}
+            className="absolute inset-y-0 right-0 px-4 text-white bg-indigo-600 hover:bg-indigo-700 rounded-r-lg"
+          >
+            Rechercher
+          </button>
         </div>
       </div>
 
@@ -131,10 +143,6 @@ export default function SearchBox({
                 setSetId('');
                 setCardNumber('');
                 setNoResult(false);
-                // Reset la recherche quand on revient au mode nom
-                if (debounceTimeout) {
-                  clearTimeout(debounceTimeout);
-                }
                 setSearchQuery('');
               }}
               className="px-3 py-1.5 text-sm border border-indigo-200 text-indigo-600 rounded-md hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
