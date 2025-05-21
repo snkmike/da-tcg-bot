@@ -48,17 +48,36 @@ npm run dev
 ```
 Pour démarrer avec HTTPS (recommandé si l'application utilise des fonctionnalités nécessitant un contexte sécurisé, ou pour simuler l'environnement de production) :
 ```bash
-npm run start:https
+npm run start
 ```
 Cela utilisera les certificats `dev.tcgbot.local-key.pem` et `dev.tcgbot.local.pem`. Vous devrez peut-être faire confiance à ces certificats dans votre navigateur ou système d'exploitation. L'application sera généralement accessible sur `https://dev.tcgbot.local:3000` ou une adresse similaire.
 
 ### 2.6. Migrations de Base de Données
 Les migrations de schéma pour la base de données Supabase se trouvent dans `/db/migrations`. Appliquez-les à votre instance Supabase via l'interface SQL de Supabase Studio ou en utilisant l'outil CLI de Supabase.
 
+### 2.7. Configuration et Accès HTTPS Local
+Pour un environnement de développement sécurisé, l'application prend en charge HTTPS local via les certificats fournis.
+
+#### Étapes pour configurer HTTPS local :
+1. Assurez-vous que les fichiers `dev.tcgbot.local-key.pem` et `dev.tcgbot.local.pem` sont présents à la racine du projet.
+2. Ajoutez une entrée dans votre fichier `hosts` pour mapper `dev.tcgbot.local` à `127.0.0.1` :
+   ```plaintext
+   127.0.0.1 dev.tcgbot.local
+   ```
+3. Lancez le serveur de développement avec HTTPS en exécutant :
+   ```bash
+   npm run start
+   ```
+4. Accédez à l'application via l'URL : `https://dev.tcgbot.local:3000`.
+
+#### Notes :
+- Vous devrez peut-être approuver les certificats dans votre navigateur ou système d'exploitation.
+- Cette configuration est utile pour tester des fonctionnalités nécessitant un contexte sécurisé, comme l'authentification ou les API externes.
+
 ## 3. Structure Détaillée du Projet
 
 *   **`/` (Racine)**
-    *   `package.json`: Dépendances Node.js, scripts (`dev`, `build`, `lint`, `start:https`, etc.).
+    *   `package.json`: Dépendances Node.js, scripts (`dev`, `build`, `lint`, `start`, etc.).
     *   `vite.config.js`: Configuration de Vite (plugins, alias, options du serveur de dev, configuration du build).
     *   `tailwind.config.js`: Configuration de Tailwind CSS (thème, plugins).
     *   `postcss.config.js`: Configuration de PostCSS (généralement pour Tailwind et Autoprefixer).
@@ -148,6 +167,31 @@ Les proxies sont essentiels pour :
 *   **Sécurité des Clés API :** Les clés API des services externes sont stockées et utilisées côté serveur (dans les proxies), et non exposées dans le code client.
 *   **Rate Limiting :** Les proxies peuvent implémenter une logique pour éviter de dépasser les limites de taux des API externes.
 *   **Caching :** Potentiellement, pour mettre en cache les réponses fréquentes et réduire la charge sur les API externes.
+
+### 4.6. Gestion des Annonces eBay
+L'application inclut une fonctionnalité pour afficher et gérer les annonces eBay via la route `/listings`.
+
+#### Détails de la fonctionnalité :
+- **Route :** `/listings`
+- **Composant associé :** `ListingsTab.jsx` dans `src/components/listings/`.
+- **Navigation :** Un onglet "Annonces eBay" est ajouté à la barre de navigation principale.
+- **Description :**
+  - Permet aux utilisateurs de rechercher et d'afficher des annonces eBay liées aux cartes TCG.
+  - Intègre des filtres pour affiner les résultats (par exemple, par prix, rareté, etc.).
+
+#### Exemple d'utilisation :
+- Accédez à `https://dev.tcgbot.local:3000/listings` pour visualiser les annonces eBay.
+- Utilisez les filtres disponibles pour personnaliser les résultats affichés.
+
+#### Débogage et Tests :
+- Lors de la tentative de publication d'une annonce de test, des journaux détaillés sont générés dans la console du navigateur :
+  - **Token d'accès eBay :** Vérifie si le token est présent dans le stockage local.
+  - **Réponse du serveur :** Affiche les détails de la réponse du backend.
+  - **Erreurs :** Capture et affiche les erreurs éventuelles lors de la publication.
+- Pour tester la publication d'une annonce :
+  1. Connectez-vous à eBay via l'onglet "Mon Compte" pour obtenir un token d'accès valide.
+  2. Cliquez sur le bouton "Tester la publication d'une annonce eBay" dans la page `/listings`.
+  3. Consultez les journaux dans la console pour diagnostiquer les éventuels problèmes.
 
 ## 5. Base de Données (Supabase)
 

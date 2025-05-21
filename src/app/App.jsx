@@ -3,7 +3,7 @@ import { useAppState } from './useAppState';
 import { renderContent } from './routes';
 import Auth from '../components/auth/Auth';
 import TabButton from '../components/ui/TabButton';
-import { Search, PieChart, Library, User } from 'lucide-react';
+import { Search, PieChart, Library, User, Tags } from 'lucide-react'; // Added Tags for Listings
 import { supabase } from '../supabaseClient';
 import { fetchLorcanaData } from '../utils/api/fetchLorcanaData';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -30,6 +30,8 @@ export default function App() {
       setActiveTab('mon-compte');
     } else if (path === '/ma-collection') {
       setActiveTab('ma-collection');
+    } else if (path === '/listings') { // Added Listings path
+      setActiveTab('listings');
     } else if (path === '/tableau-de-bord') {
       setActiveTab('tableau-de-bord');
     } else if (path === '/' || path === '/recherche') {
@@ -303,6 +305,7 @@ export default function App() {
     { name: 'tableau-de-bord', label: 'Tableau de Bord', icon: PieChart, path: '/tableau-de-bord' },
     { name: 'recherche', label: 'Recherche', icon: Search, path: '/recherche' },
     { name: 'ma-collection', label: 'Ma Collection', icon: Library, path: '/ma-collection' },
+    { name: 'listings', label: 'Annonces eBay', icon: Tags, path: '/listings' }, // Added Listings Tab
     { name: 'mon-compte', label: 'Mon Compte', icon: User, path: '/mon-compte' },
   ];
 
@@ -360,7 +363,7 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <main className="flex-1 p-4 overflow-auto pt-28">
+      <main className="flex-1 p-4 overflow-auto pt-5">
         {renderContent(
           activeTab, 
           { 

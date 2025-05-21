@@ -4,6 +4,7 @@ import DashboardTab from '../components/dashboard/DashboardTab';
 import MyCollectionTab from '../components/collection/MyCollectionTab';
 import LorcanaResults from '../components/cards/LorcanaResults';
 import MyAccountTab from '../components/account/MyAccountTab';
+import ListingsTab from '../components/listings/ListingsTab'; // Import ListingsTab
 
 export function renderContent(activeTab, state, location) { 
   const {
@@ -65,6 +66,8 @@ export function renderContent(activeTab, state, location) {
       return <MyCollectionTab user={user} />;
     case 'tableau-de-bord': // French
       return <DashboardTab portfolio={userPortfolio} />;
+    case 'listings': // Add case for ListingsTab
+      return <ListingsTab {...state} />;
     case 'mon-compte': // French (already handled by path check, but good for consistency)
       return <MyAccountTab />;
     default:
