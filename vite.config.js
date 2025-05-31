@@ -36,13 +36,13 @@ export default defineConfig({
       'public': path.resolve(__dirname, './public')
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json']
-  },
-  define: {
+  },  define: {
     // Utiliser des variables spécifiques au lieu de tout process.env
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     'process.env.VITE_SITE_URL': JSON.stringify(process.env.VITE_SITE_URL),
     'process.env.JUSTTCG_API_KEY': JSON.stringify(process.env.JUSTTCG_API_KEY),
-    'process.env.LORCAST_API_KEY': JSON.stringify(process.env.LORCAST_API_KEY)
+    'process.env.LORCAST_API_KEY': JSON.stringify(process.env.LORCAST_API_KEY),
+    'process.env.REACT_APP_CARDTRADER_API_TOKEN': JSON.stringify(process.env.REACT_APP_CARDTRADER_API_TOKEN)
   },
   build: {
     outDir: 'build',

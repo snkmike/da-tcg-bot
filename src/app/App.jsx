@@ -3,7 +3,7 @@ import { useAppState } from './useAppState';
 import { renderContent } from './routes';
 import Auth from '../components/auth/Auth';
 import TabButton from '../components/ui/TabButton';
-import { Search, PieChart, Library, User, Tags } from 'lucide-react'; // Added Tags for Listings
+import { Search, PieChart, Library, User, Tags } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { fetchLorcanaData } from '../utils/api/fetchLorcanaData';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -300,12 +300,11 @@ export default function App() {
       setAvailableSets([]);
     }
   }, [filterGame]);
-
   const allTabs = [
     { name: 'tableau-de-bord', label: 'Tableau de Bord', icon: PieChart, path: '/tableau-de-bord' },
     { name: 'recherche', label: 'Recherche', icon: Search, path: '/recherche' },
     { name: 'ma-collection', label: 'Ma Collection', icon: Library, path: '/ma-collection' },
-    { name: 'listings', label: 'Annonces eBay', icon: Tags, path: '/listings' }, // Added Listings Tab
+    { name: 'listings', label: 'Listings CardTrader', icon: Tags, path: '/listings' },
     { name: 'mon-compte', label: 'Mon Compte', icon: User, path: '/mon-compte' },
   ];
 

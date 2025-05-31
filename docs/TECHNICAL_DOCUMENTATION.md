@@ -169,29 +169,8 @@ Les proxies sont essentiels pour :
 *   **Caching :** Potentiellement, pour mettre en cache les réponses fréquentes et réduire la charge sur les API externes.
 
 ### 4.6. Gestion des Annonces eBay
-L'application inclut une fonctionnalité pour afficher et gérer les annonces eBay via la route `/listings`.
 
-#### Détails de la fonctionnalité :
-- **Route :** `/listings`
-- **Composant associé :** `ListingsTab.jsx` dans `src/components/listings/`.
-- **Navigation :** Un onglet "Annonces eBay" est ajouté à la barre de navigation principale.
-- **Description :**
-  - Permet aux utilisateurs de rechercher et d'afficher des annonces eBay liées aux cartes TCG.
-  - Intègre des filtres pour affiner les résultats (par exemple, par prix, rareté, etc.).
-
-#### Exemple d'utilisation :
-- Accédez à `https://dev.tcgbot.local:3000/listings` pour visualiser les annonces eBay.
-- Utilisez les filtres disponibles pour personnaliser les résultats affichés.
-
-#### Débogage et Tests :
-- Lors de la tentative de publication d'une annonce de test, des journaux détaillés sont générés dans la console du navigateur :
-  - **Token d'accès eBay :** Vérifie si le token est présent dans le stockage local.
-  - **Réponse du serveur :** Affiche les détails de la réponse du backend.
-  - **Erreurs :** Capture et affiche les erreurs éventuelles lors de la publication.
-- Pour tester la publication d'une annonce :
-  1. Connectez-vous à eBay via l'onglet "Mon Compte" pour obtenir un token d'accès valide.
-  2. Cliquez sur le bouton "Tester la publication d'une annonce eBay" dans la page `/listings`.
-  3. Consultez les journaux dans la console pour diagnostiquer les éventuels problèmes.
+Cette section a été supprimée car l'intégration eBay n'est plus supportée dans l'application.
 
 ## 5. Base de Données (Supabase)
 

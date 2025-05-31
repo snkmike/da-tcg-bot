@@ -63,8 +63,7 @@ export function renderContent(activeTab, state, location) {
         />
       );
     case 'ma-collection': // French
-      return <MyCollectionTab user={user} />;
-    case 'tableau-de-bord': // French
+      return <MyCollectionTab user={user} />;    case 'tableau-de-bord': // French
       return <DashboardTab portfolio={userPortfolio} />;
     case 'listings': // Add case for ListingsTab
       return <ListingsTab {...state} />;
