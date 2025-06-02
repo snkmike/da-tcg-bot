@@ -236,6 +236,53 @@ app.delete('/cardtrader/products/:id', async (req, res) => {
   }
 });
 
+// GET /cardtrader/marketplace/products (search marketplace)
+app.get('/cardtrader/marketplace/products', async (req, res) => {
+  try {
+    const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+    console.log(`🌐 Searching marketplace products from CardTrader with params: ${queryString}`);
+    const response = await fetch(`${BASE_URL}/marketplace/products${queryString}`, {
+      headers: req.cardTraderHeaders
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ CardTrader marketplace search result:', data);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ CardTrader marketplace search error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /cardtrader/categories (with optional game_id filter)
+app.get('/cardtrader/categories', async (req, res) => {
+  try {
+    const queryString = Object.keys(req.query).length > 0 ? '?' + new URLSearchParams(req.query).toString() : '';
+    console.log(`🌐 Fetching categories from CardTrader with params: ${queryString}`);
+    const response = await fetch(`${BASE_URL}/categories${queryString}`, {
+      headers: req.cardTraderHeaders
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    // CardTrader API returns {array: [...]} format, unwrap it
+    const categories = data.array || data;
+    console.log('✅ CardTrader categories count:', categories.length);
+    res.json(categories);
+  } catch (error) {
+    console.error('❌ CardTrader categories error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ CardTrader Proxy running at http://localhost:${PORT}`);
 });

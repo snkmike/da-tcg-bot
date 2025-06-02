@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Test Final - Correction Cartes Foil</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section { 
+            background: white;
+            margin: 20px 0; 
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-left: 4px solid #10b981;
+            background-color: #f0fdf4;
+        }
+        .expected-output { 
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .warning { color: #f59e0b; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .fixed-badge { 
+            background: linear-gradient(45deg, #10b981, #34d399);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Final - Correction Problème Cartes Foil</h1>
+    
+    <div class="test-section">
+        <h2>✅ <span class="fixed-badge">CORRIGÉ</span> Améliorations Apportées</h2>
+        
+        <div class="step">
+            <strong>1. Messages de debug uniformisés</strong>
+            <p>Ajout de messages détaillés dans les deux chemins de recherche</p>
+            <p>Format : <code>❌ Avant → ✅ Après (nombre de cartes)</code></p>
+        </div>
+        
+        <div class="step">
+            <strong>2. Comptage détaillé Foil/Normal</strong>
+            <p>Chaque recherche affiche maintenant le nombre de cartes normales vs Foil</p>
+            <p>Visible même quand includeFoil=true</p>
+        </div>
+        
+        <div class="step">
+            <strong>3. Debug par extension</strong>
+            <p>Pour les recherches multi-extensions, debug par extension individuelle</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Test à Effectuer MAINTENANT</h2>
+        
+        <div class="step">
+            <strong>Étape 1 : Ouvrir l'application</strong>
+            <p>→ Aller sur : <a href="https://dev.tcgbot.local:3000/" target="_blank">https://dev.tcgbot.local:3000/</a></p>
+            <p>→ Cliquer sur l'onglet "CardTrader"</p>
+            <p>→ Ouvrir la console de développement (F12)</p>
+        </div>
+        
+        <div class="step">
+            <strong>Étape 2 : Test avec extension spécifique</strong>
+            <p>1. Sélectionner un jeu (ex: Magic, Pokemon, Lorcana)</p>
+            <p>2. Sélectionner une extension récente</p>
+            <p>3. ✅ DÉCOCHER "Inclure les cartes Foil"</p>
+            <p>4. Lancer la recherche</p>
+        </div>
+        
+        <div class="expected-output">
+<span class="success">✅ Messages attendus (includeFoil=false) :</span>
+🔍 Loading blueprints for expansion: 12345
+📦 Found blueprints: 180
+🎯 Filtered blueprints by name: 180  (si pas de nom)
+💎 Filtered blueprints by rarity: 180  (si pas de rareté)
+<span class="warning">✨ Filtered out foil cards: 180 → 155</span>  ← NOUVEAU !
+📊 Final results: 155 cartes (25 Foil exclues)
+        </div>
+        
+        <div class="step">
+            <strong>Étape 3 : Test avec Foil incluses</strong>
+            <p>1. ✅ COCHER "Inclure les cartes Foil"</p>
+            <p>2. Relancer la même recherche</p>
+        </div>
+        
+        <div class="expected-output">
+<span class="success">✅ Messages attendus (includeFoil=true) :</span>
+🔍 Loading blueprints for expansion: 12345
+📦 Found blueprints: 180
+🎯 Filtered blueprints by name: 180
+💎 Filtered blueprints by rarity: 180
+<span class="success">✨ Including foil cards in results: 180 total (25 foil)</span>  ← NOUVEAU !
+📊 Final results: 180 cartes (155 normales + 25 Foil)
+        </div>
+        
+        <div class="step">
+            <strong>Étape 4 : Test recherche par nom (multi-extensions)</strong>
+            <p>1. Sélectionner un jeu sans extension spécifique</p>
+            <p>2. Entrer un nom de carte (ex: "Lightning Bolt", "Charizard")</p>
+            <p>3. Tester avec Foil décoché puis coché</p>
+        </div>
+        
+        <div class="expected-output">
+<span class="success">✅ Messages attendus (recherche multi-extensions) :</span>
+🔍 Searching blueprints across all expansions for game: 1
+📦 Found expansions for game: 15
+<span class="warning">✨ Expansion 123: Filtered out foil cards: 25 → 20</span>  ← NOUVEAU !
+<span class="warning">✨ Expansion 124: Filtered out foil cards: 18 → 15</span>  ← NOUVEAU !
+🎯 Total blueprints found across expansions: 85
+<span class="success">📊 Final results breakdown: 75 normal cards, 10 foil cards (includeFoil: false)</span>  ← NOUVEAU !
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Résultats Attendus</h2>
+        
+        <div class="step">
+            <strong class="success">✅ Si tout fonctionne :</strong>
+            <ul>
+                <li>Avec Foil décoché : Moins de cartes dans les résultats</li>
+                <li>Avec Foil coché : Plus de cartes (versions Foil incluses)</li>
+                <li>Messages console détaillés avec comptages précis</li>
+                <li>Tri intelligent : cartes Foil à côté des normales</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong class="error">❌ Si problème persiste :</strong>
+            <ul>
+                <li>Vérifier si les messages de debug apparaissent</li>
+                <li>Noter les chiffres exacts dans la console</li>
+                <li>Essayer différents jeux (Magic, Pokemon, Lorcana)</li>
+                <li>Tester avec des extensions contenant des cartes Foil</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Fonctions de Détection Foil</h2>
+        <div class="expected-output">
+// Détection automatique des cartes Foil
+const isCardFoil = (blueprint) => {
+  const cardName = (blueprint.name || '').toLowerCase();
+  const cardFinish = (blueprint.fixed_properties?.finish || '').toLowerCase();
+  const cardTreatment = (blueprint.fixed_properties?.treatment || '').toLowerCase();
+  return cardName.includes('foil') || 
+         cardFinish.includes('foil') || 
+         cardTreatment.includes('foil') ||
+         cardFinish.includes('holo') ||
+         cardTreatment.includes('holo');
+};
+
+// Extraction du nom de base (sans "Foil")
+const getBaseCardName = (blueprint) => {
+  return blueprint.name
+    .replace(/\s*\(foil\)/gi, '')
+    .replace(/\s*foil\s*/gi, ' ')
+    .replace(/\s*holo\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+        </div>
+    </div>
+
+    <script>
+        console.log('🔧 Page de test finale chargée');
+        console.log('👆 Suivez les étapes ci-dessus pour valider la correction');
+        console.log('✅ Les messages de debug ont été améliorés dans les deux chemins de recherche');
+        
+        // Auto-focus sur le lien de l'application
+        setTimeout(() => {
+            const link = document.querySelector('a[href*="dev.tcgbot.local"]');
+            if (link) {
+                link.style.backgroundColor = '#fef3c7';
+                link.style.padding = '2px 6px';
+                link.style.borderRadius = '4px';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Test Structure API CardTrader</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section { 
+            background: white;
+            margin: 20px 0; 
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .code-output { 
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .warning { color: #f59e0b; }
+        .error { color: #ef4444; }
+        .highlight { background-color: #fef3c7; padding: 2px 4px; border-radius: 3px; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        .loading { opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Structure API CardTrader - Détection Foil</h1>
+    
+    <div class="test-section">
+        <h2>🎯 Objectif</h2>
+        <p>Analyser la vraie structure des données retournées par l'API CardTrader pour améliorer la détection des cartes Foil/Holo.</p>
+        
+        <h3>📋 Instructions :</h3>
+        <ol>
+            <li>Ouvrir l'application CardTrader : <a href="https://dev.tcgbot.local:3000/" target="_blank">https://dev.tcgbot.local:3000/</a></li>
+            <li>Aller dans l'onglet "CardTrader"</li>
+            <li>Ouvrir la console de développement (F12)</li>
+            <li>Faire une recherche dans une extension</li>
+            <li>Regarder les messages de debug ci-dessous</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Fonction de Détection Améliorée</h2>
+        <p>La nouvelle fonction <code>isCardFoil</code> cherche maintenant dans :</p>
+        
+        <div class="code-output">
+<span class="success">// 1. fixed_properties.finish</span>
+if (finish === 'foil' || finish.includes('foil'))
+
+<span class="success">// 2. fixed_properties.treatment</span>  
+if (treatment === 'holo' || treatment === 'etched' || treatment.includes('foil'))
+
+<span class="success">// 3. properties_hash.finish (array)</span>
+if (finishArray.some(f => f === 'foil' || f.includes('foil')))
+
+<span class="success">// 4. properties_hash.treatment (array)</span>
+if (treatmentArray.some(t => t === 'holo' || t === 'etched'))
+
+<span class="success">// 5. version field</span>
+if (version.includes('foil') || version.includes('holo'))
+
+<span class="success">// 6. name field (fallback)</span>
+if (cardName.includes('foil') || cardName.includes('holo'))
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Messages de Debug Attendus</h2>
+        
+        <div class="code-output" id="expected-messages">
+<span class="success">✅ Messages à chercher dans la console :</span>
+
+<span class="warning">🔍 Structure du premier blueprint:</span> {
+  name: "Lightning Bolt",
+  fixed_properties: { finish: "foil", treatment: "normal" },
+  properties_hash: { finish: ["foil", "non-foil"] },
+  version: "Foil"
+}
+
+<span class="warning">✨ Finitions disponibles dans cette extension:</span> ["foil", "non-foil", "etched"]
+<span class="warning">🎨 Traitements disponibles dans cette extension:</span> ["normal", "holo", "borderless"]
+
+<span class="success">🔍 Foil détecté via finish: Lightning Bolt (finish: foil)</span>
+<span class="success">🔍 Foil détecté via treatment: Charizard (treatment: holo)</span>
+<span class="success">🔍 Foil détecté via properties_hash: Pikachu (finishes: foil, etched)</span>
+
+<span class="warning">✨ Filtered out foil cards: 180 → 155</span>
+<span class="success">✨ Including foil cards in results: 180 total (25 foil)</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Tests Recommandés</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h4>🎮 Jeux à Tester :</h4>
+                <ul>
+                    <li><strong>Magic:</strong> Extensions récentes (foil commun)</li>
+                    <li><strong>Pokemon:</strong> Sets avec cartes Holo</li>
+                    <li><strong>Lorcana:</strong> Cartes Enchanted/Foil</li>
+                    <li><strong>Yu-Gi-Oh:</strong> Cartes avec finitions spéciales</li>
+                </ul>
+            </div>
+            <div>
+                <h4>🔍 Extensions Suggérées :</h4>
+                <ul>
+                    <li>Magic: "March of the Machine"</li>
+                    <li>Pokemon: "Paldea Evolved"</li>
+                    <li>Lorcana: "The First Chapter"</li>
+                    <li>Toute extension récente</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Résultats du Test</h2>
+        <div id="test-results">
+            <p><em>Effectuez le test dans l'application puis revenez ici noter vos observations...</em></p>
+            
+            <button onclick="showTestForm()">📝 Noter les Résultats</button>
+            
+            <div id="test-form" style="display: none; margin-top: 20px;">
+                <h4>Observations :</h4>
+                <textarea id="observations" rows="6" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;" 
+                    placeholder="Ex: Messages de debug vus, nombre de cartes avant/après filtrage Foil, structure des données, etc."></textarea>
+                
+                <h4>Finitions détectées :</h4>
+                <input type="text" id="finitions" style="width: 100%; padding: 8px; margin: 5px 0;" 
+                    placeholder="Ex: foil, non-foil, holo, etched, borderless...">
+                
+                <h4>Cartes Foil trouvées :</h4>
+                <input type="text" id="foil-cards" style="width: 100%; padding: 8px; margin: 5px 0;" 
+                    placeholder="Ex: Lightning Bolt (Foil), Charizard (Holo)...">
+                
+                <br><button onclick="saveResults()">💾 Sauvegarder</button>
+            </div>
+            
+            <div id="saved-results" style="display: none; margin-top: 20px; padding: 15px; background: #f0fdf4; border-radius: 6px;">
+                <h4 class="success">✅ Résultats Sauvegardés</h4>
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🔍 Page de test structure API chargée');
+        console.log('👆 Suivez les instructions pour analyser la structure des données CardTrader');
+        
+        function showTestForm() {
+            document.getElementById('test-form').style.display = 'block';
+            document.querySelector('button[onclick="showTestForm()"]').style.display = 'none';
+        }
+        
+        function saveResults() {
+            const observations = document.getElementById('observations').value;
+            const finitions = document.getElementById('finitions').value;
+            const foilCards = document.getElementById('foil-cards').value;
+            
+            const resultsContent = `
+                <p><strong>Observations:</strong><br>${observations || 'Aucune'}</p>
+                <p><strong>Finitions détectées:</strong> ${finitions || 'Aucune'}</p>
+                <p><strong>Cartes Foil trouvées:</strong> ${foilCards || 'Aucune'}</p>
+                <p><em>Sauvegardé le ${new Date().toLocaleString()}</em></p>
+            `;
+            
+            document.getElementById('results-content').innerHTML = resultsContent;
+            document.getElementById('saved-results').style.display = 'block';
+            document.getElementById('test-form').style.display = 'none';
+            
+            console.log('📋 Résultats du test:', { observations, finitions, foilCards });
+        }
+        
+        // Auto-focus sur le lien de l'application
+        setTimeout(() => {
+            const link = document.querySelector('a[href*="dev.tcgbot.local"]');
+            if (link) {
+                link.style.backgroundColor = '#fef3c7';
+                link.style.padding = '2px 6px';
+                link.style.borderRadius = '4px';
+                link.style.fontWeight = 'bold';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

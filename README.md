@@ -169,3 +169,26 @@ Mike (snkmike) — *via GitHub ou Discord (prochainement)*
 ## 🧠 License
 
 Projet open-source sous [MIT License](LICENSE).
+
+---
+
+## 📚 Documentation Complète
+
+**➡️ [Accéder à la Documentation](./docs/README.md)**
+
+La documentation a été **complètement réorganisée** en juin 2025 pour améliorer la navigation :
+
+### 🚀 **Démarrage Rapide**
+- 📖 [**Vue d'ensemble du Projet**](./docs/01-PROJECT-OVERVIEW.md) - Vision et fonctionnalités
+- 🚀 [**Guide d'Installation**](./docs/02-INSTALLATION-GUIDE.md) - Configuration complète
+- 🏗️ [**Architecture Technique**](./docs/03-ARCHITECTURE.md) - Structure et composants
+
+### 🛠️ **Guides Techniques**
+- 🗄️ [**Base de Données**](./docs/04-DATABASE.md) - Schéma Supabase et migrations
+- 💻 [**Configuration de Développement**](./docs/05-DEVELOPMENT.md) - Scripts et workflow
+- 🔌 [**APIs et Intégrations**](./docs/06-APIS.md) - Proxies et endpoints
+
+### 🎯 **Fonctionnalités Spécialisées**
+- 🛒 [**Listings CardTrader**](./docs/features/CARDTRADER-LISTINGS.md) - Marketplace intégration
+- 🔧 [**Troubleshooting**](./docs/troubleshooting/TROUBLESHOOTING.md) - Résolution de problèmes
+- 🚀 [**Déploiement**](./docs/deployment/DEPLOYMENT.md) - Mise en production

@@ -70,23 +70,14 @@ export default function CollectionDetails({
         setSortKey={setSortKey}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
-      />
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+      />      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
         {sortedCards.map(card => (
           <CollectionCardItem
             key={`${card.name}_${card.set_name}_${card.collector_number}_${card.isFoil}`}
             card={card}
             onUpdate={() => fetchCardsForCollection(collection.id)}
             collectionId={collection.id}
-          >
-            <div className="text-sm mt-2">
-              <p className="text-green-600 font-bold">Prix normal: {card.price} €</p>
-              {card.foil_price > 0 && (
-                <p className="text-purple-600 font-bold">Prix foil: {card.foil_price} €</p>
-              )}
-            </div>
-          </CollectionCardItem>
+          />
         ))}
       </div>
     </div>

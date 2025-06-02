@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Debug - Cartes Foil</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section { 
+            background: white;
+            margin: 20px 0; 
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-left: 4px solid #3b82f6;
+            background-color: #f8fafc;
+        }
+        .foil-indicator { 
+            background: linear-gradient(45deg, #ffd700, #ffed4a);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #7c2d12;
+        }
+        .code { 
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .status-ok { color: #059669; }
+        .status-issue { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Vérification des cartes Foil</h1>
+    
+    <div class="debug-section">
+        <h2>🎯 Étapes de diagnostic</h2>
+        
+        <div class="step">
+            <strong>1. Ouvrir la console de développement (F12)</strong>
+            <p>Aller dans l'onglet "Console" pour voir les messages de debug</p>
+        </div>
+        
+        <div class="step">
+            <strong>2. Effectuer une recherche avec "Inclure les Foil" DÉCOCHÉ</strong>
+            <p>Rechercher dans une extension qui contient des cartes Foil</p>
+            <p>➜ Vous devriez voir : <code class="status-ok">✨ Filtered out foil cards: X</code></p>
+        </div>
+        
+        <div class="step">
+            <strong>3. Cocher "✨ Inclure les cartes Foil"</strong>
+            <p>Relancer la même recherche</p>
+            <p>➜ Vous devriez voir : <code class="status-ok">✨ Including foil cards in results: Y</code></p>
+            <p>➜ Y devrait être plus grand que X</p>
+        </div>
+        
+        <div class="step">
+            <strong>4. Vérifier les résultats affichés</strong>
+            <p>Les cartes avec <span class="foil-indicator">Foil</span> dans le nom devraient apparaître</p>
+            <p>Elles doivent être groupées avec leur version normale</p>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔧 Fonctions de détection Foil</h2>
+        <div class="code">
+const isCardFoil = (blueprint) => {
+  const cardName = (blueprint.name || '').toLowerCase();
+  const cardFinish = (blueprint.fixed_properties?.finish || '').toLowerCase();
+  const cardTreatment = (blueprint.fixed_properties?.treatment || '').toLowerCase();
+  return cardName.includes('foil') || 
+         cardFinish.includes('foil') || 
+         cardTreatment.includes('foil') ||
+         cardFinish.includes('holo') ||
+         cardTreatment.includes('holo');
+};
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Tests recommandés</h2>
+        
+        <div class="step">
+            <strong>Test 1 : Pokémon</strong>
+            <p>Rechercher "Charizard" dans une extension récente</p>
+            <p>Vérifier si des versions Holo/Foil apparaissent</p>
+        </div>
+        
+        <div class="step">
+            <strong>Test 2 : Magic</strong>
+            <p>Rechercher dans une extension Magic</p>
+            <p>Vérifier les cartes avec "Foil" dans le nom</p>
+        </div>
+        
+        <div class="step">
+            <strong>Test 3 : Lorcana</strong>
+            <p>Rechercher "Elsa" ou "Anna"</p>
+            <p>Vérifier les versions Foil/Enchanted</p>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>❌ Si ça ne fonctionne toujours pas</h2>
+        
+        <p class="status-issue">Vérifiez dans la console s'il y a :</p>
+        <ul>
+            <li>Des erreurs JavaScript</li>
+            <li>Les messages de debug apparaissent bien</li>
+            <li>Le nombre de cartes change entre coché/décoché</li>
+        </ul>
+        
+        <p><strong>Message attendu quand tout fonctionne :</strong></p>
+        <div class="code">
+🔍 Loading blueprints for expansion: 123
+📦 Found blueprints: 150
+🎯 Filtered blueprints by name: 12
+🏷️ Filtered blueprints by category: 12
+✨ Including foil cards in results: 12  ← NOUVEAU
+📊 Foil cards detected: Anna (Foil), Elsa (Foil)  ← Si cartes Foil présentes
+        </div>
+    </div>
+
+    <script>
+        console.log('🔍 Page de debug chargée - Testez maintenant l\'interface CardTrader !');
+        console.log('👆 Suivez les étapes ci-dessus pour diagnostiquer le problème');
+    </script>
+</body>
+</html>

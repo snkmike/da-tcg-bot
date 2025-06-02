@@ -23,10 +23,13 @@ ChartJS.register(
   Legend
 );
 
-export default function CardDetail({ card, onClose }) {
+export default function CardDetail({ card, onClose, source = 'cardtrader' }) {
   const [timeframe, setTimeframe] = useState('all');
 
   if (!card) return null;
+
+  // Détecter le type de source pour l'affichage
+  const isCardTrader = source === 'cardtrader' || card.source === 'cardtrader';
 
   // Filtrer l'historique des prix selon la période
   const filterPriceHistory = (history) => {
@@ -77,7 +80,7 @@ export default function CardDetail({ card, onClose }) {
             <div>
               <div className="relative">
                 <img 
-                  src={card.image} 
+                  src={card.image_url || card.image} 
                   alt={card.name}
                   className={`rounded-lg shadow-lg w-full ${card.isFoil ? 'card-foil' : ''}`}
                 />
@@ -91,35 +94,133 @@ export default function CardDetail({ card, onClose }) {
                 )}
               </div>
 
-              {/* Prix */}
-              <div className="mt-6 flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="text-sm text-gray-600">Prix normal</div>
-                  <div className="text-xl font-bold text-green-600">{card.price}€</div>
-                </div>
-                {card.foil_price && (
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600">Prix foil</div>
-                    <div className="text-xl font-bold text-purple-600">{card.foil_price}€</div>
-                  </div>
+              {/* Actions spécifiques selon la source */}
+              <div className="mt-6 space-y-3">
+                {isCardTrader ? (
+                  <>
+                    <button 
+                      onClick={() => window.open(`https://www.cardtrader.com/cards/${card.blueprint_id || card.id}`, '_blank')}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                    >
+                      Voir sur CardTrader
+                    </button>
+                    
+                    <button 
+                      onClick={() => console.log('Blueprint data:', card._raw || card)}
+                      className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                    >
+                      Afficher les données dans la console
+                    </button>
+                  </>
+                ) : (
+                  // Actions pour Lorcana
+                  <>
+                    {/* Prix */}
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="text-sm text-gray-600">Prix normal</div>
+                        <div className="text-xl font-bold text-green-600">{card.price}€</div>
+                      </div>
+                      {card.foilPrice && (
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">Prix foil</div>
+                          <div className="text-xl font-bold text-purple-600">{card.foilPrice}€</div>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
 
             {/* Colonne droite - Infos */}
             <div className="space-y-6">
-              {/* Informations principales */}
-              <InfoSection title="Détails de la carte">
-                <InfoRow label="Set" value={card.set_name} />
-                <InfoRow label="Numéro" value={`#${card.collector_number}`} />
-                <InfoRow label="Rareté" value={card.rarity} />
-                <InfoRow label="Type" value={card.type} />
-                {card.ink_color && <InfoRow label="Couleur d'encre" value={card.ink_color} />}
-                {card.cost && <InfoRow label="Coût" value={card.cost} />}
+              {/* Informations de base */}
+              <InfoSection title="Informations de base">
+                <InfoRow label="Nom" value={card.name} />
+                {isCardTrader ? (
+                  <>
+                    <InfoRow label="ID CardTrader" value={card.blueprint_id || card.id} />
+                    {card.set && <InfoRow label="Extension" value={card.set.name} />}
+                    {card.collector_number && <InfoRow label="Numéro" value={`#${card.collector_number}`} />}
+                    {card.rarity && <InfoRow label="Rareté" value={card.rarity} />}
+                    {card.version && <InfoRow label="Version" value={card.version} />}
+                    {card.category_id && <InfoRow label="Catégorie ID" value={card.category_id} />}
+                  </>
+                ) : (
+                  <>
+                    <InfoRow label="Extension" value={card.set} />
+                    <InfoRow label="Numéro" value={card.number} />
+                    <InfoRow label="Rareté" value={card.rarity} />
+                    <InfoRow label="Type" value={card.type} />
+                    <InfoRow label="Couleur" value={card.ink} />
+                    {card.cost && <InfoRow label="Coût" value={card.cost} />}
+                  </>
+                )}
               </InfoSection>
 
-              {/* Stats de combat si applicables */}
-              {(card.strength || card.willpower || card.lore) && (
+              {/* Extension (pour CardTrader) */}
+              {isCardTrader && card.set && (
+                <InfoSection title="Extension">
+                  <InfoRow label="Nom" value={card.set.name} />
+                  {card.set.code && <InfoRow label="Code" value={card.set.code} />}
+                  {card.set.released_at && (
+                    <InfoRow label="Date de sortie" value={new Date(card.set.released_at).toLocaleDateString('fr-FR')} />
+                  )}
+                  {card.set.icon_url && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-gray-600">Icône:</span>
+                      <img 
+                        src={card.set.icon_url} 
+                        alt={card.set.name}
+                        className="w-8 h-8"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    </div>
+                  )}
+                </InfoSection>
+              )}
+
+              {/* Informations du jeu (pour CardTrader) */}
+              {isCardTrader && card.game && (
+                <InfoSection title="Jeu">
+                  <InfoRow label="Nom" value={card.game.display_name || card.game.name} />
+                  <InfoRow label="ID" value={card.game.id} />
+                </InfoSection>
+              )}
+
+              {/* IDs externes (pour CardTrader) */}
+              {isCardTrader && (card.scryfall_id || card.tcg_player_id || (card.card_market_ids && card.card_market_ids.length > 0)) && (
+                <InfoSection title="Identifiants externes">
+                  {card.scryfall_id && <InfoRow label="Scryfall ID" value={card.scryfall_id} />}
+                  {card.tcg_player_id && <InfoRow label="TCGPlayer ID" value={card.tcg_player_id} />}
+                  {card.card_market_ids && card.card_market_ids.length > 0 && (
+                    <InfoRow label="CardMarket IDs" value={card.card_market_ids.join(', ')} />
+                  )}
+                </InfoSection>
+              )}
+
+              {/* Propriétés éditables (pour CardTrader) */}
+              {isCardTrader && card.editable_properties && card.editable_properties.length > 0 && (
+                <InfoSection title="Propriétés disponibles">
+                  {card.editable_properties.map((prop, index) => (
+                    <div key={index} className="border-b border-gray-200 last:border-b-0 pb-2 last:pb-0">
+                      <div className="font-medium text-gray-900">{prop.name}</div>
+                      <div className="text-sm text-gray-600">
+                        Type: {prop.type} | Défaut: {prop.default_value}
+                      </div>
+                      {prop.possible_values && prop.possible_values.length > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Valeurs: {prop.possible_values.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </InfoSection>
+              )}
+
+              {/* Stats de combat si applicables (pour Lorcana) */}
+              {!isCardTrader && (card.strength || card.willpower || card.lore) && (
                 <InfoSection title="Statistiques">
                   {card.strength && <InfoRow label="Force" value={card.strength} />}
                   {card.willpower && <InfoRow label="Volonté" value={card.willpower} />}
@@ -145,9 +246,11 @@ export default function CardDetail({ card, onClose }) {
               )}
 
               {/* Texte de la carte */}
-              {card.text && (
-                <InfoSection title="Texte">
-                  <div className="text-gray-700 whitespace-pre-wrap">{card.text}</div>
+              {(card.text || card.description) && (
+                <InfoSection title={isCardTrader ? "Description" : "Texte"}>
+                  <div className="text-gray-700 whitespace-pre-wrap">
+                    {isCardTrader && card.description ? `"${card.description}"` : card.text}
+                  </div>
                 </InfoSection>
               )}
 

@@ -1,0 +1,94 @@
+<!-- Test de la logique de tri Foil -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test - Tri des cartes Foil</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .card { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        .foil { background-color: #ffd700; }
+        .normal { background-color: #f0f0f0; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test - Tri des cartes Foil</h1>
+    
+    <div class="test-section">
+        <h2>📋 Comportement attendu :</h2>
+        <p><strong>Quand "Inclure les Foil" est COCHÉ :</strong></p>
+        <ul>
+            <li>Les cartes sont groupées par nom de base</li>
+            <li>Pour chaque groupe : version normale PUIS version Foil</li>
+            <li>Exemple : "Elsa" → "Elsa (Foil)" → "Anna" → "Anna (Foil)"</li>
+        </ul>
+        
+        <p><strong>Quand "Inclure les Foil" est DÉCOCHÉ :</strong></p>
+        <ul>
+            <li>Seules les cartes normales apparaissent</li>
+            <li>Tri classique par ordre alphabétique ou rareté</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Fonctions utilitaires ajoutées :</h2>
+        <pre><code>
+// Détecte si une carte est Foil
+const isCardFoil = (blueprint) => {
+  const cardName = (blueprint.name || '').toLowerCase();
+  const cardFinish = (blueprint.fixed_properties?.finish || '').toLowerCase();
+  const cardTreatment = (blueprint.fixed_properties?.treatment || '').toLowerCase();
+  return cardName.includes('foil') || 
+         cardFinish.includes('foil') || 
+         cardTreatment.includes('foil') ||
+         cardFinish.includes('holo') ||
+         cardTreatment.includes('holo');
+};
+
+// Extrait le nom de base (sans "Foil", "Holo")
+const getBaseCardName = (blueprint) => {
+  const cardName = blueprint.name || '';
+  return cardName
+    .replace(/\s*\(foil\)/gi, '')
+    .replace(/\s*foil\s*/gi, ' ')
+    .replace(/\s*holo\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+        </code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Test avec exemples :</h2>
+        
+        <h3>Cartes d'exemple :</h3>
+        <div class="card normal">Elsa - Snow Queen</div>
+        <div class="card foil">Elsa - Snow Queen (Foil)</div>
+        <div class="card normal">Anna - Heir to Arendelle</div>
+        <div class="card foil">Anna - Heir to Arendelle (Foil)</div>
+        <div class="card normal">Beast - Tragic Hero</div>
+        
+        <h3>Résultat attendu avec Foil inclus :</h3>
+        <div class="card normal">1. Anna - Heir to Arendelle</div>
+        <div class="card foil">2. Anna - Heir to Arendelle (Foil)</div>
+        <div class="card normal">3. Beast - Tragic Hero</div>
+        <div class="card normal">4. Elsa - Snow Queen</div>
+        <div class="card foil">5. Elsa - Snow Queen (Foil)</div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ À tester dans l'interface :</h2>
+        <ol>
+            <li>Rechercher des cartes avec versions Foil disponibles</li>
+            <li>Décocher "Inclure les Foil" → Vérifier que seules les versions normales apparaissent</li>
+            <li>Cocher "Inclure les Foil" → Vérifier que les versions Foil apparaissent à côté des normales</li>
+            <li>Tester avec tri par "Ordre alphabétique" et "Par rareté"</li>
+            <li>Vérifier que les prix sont bien récupérés pour les deux versions</li>
+        </ol>
+    </div>
+
+    <script>
+        console.log('🎮 Test page loaded - Vérifiez l\'interface CardTrader pour voir le tri en action !');
+    </script>
+</body>
+</html>
